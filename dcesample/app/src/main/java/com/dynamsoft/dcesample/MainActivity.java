@@ -312,7 +312,7 @@ public class MainActivity extends AppCompatActivity {
         cameraView.addOverlay();
 
         mCameraEnhancer.enableSensorControl(false);
-        mCameraEnhancer.enableAutoZoom(true);
+        mCameraEnhancer.enableAutoZoom(false);
         mCameraEnhancer.enableDCEAutoFocus(true);
         mCameraEnhancer.enableRegularAutoFocus(false);
         mCameraEnhancer.enableAutoFocusOnSharpnessChange(false);
