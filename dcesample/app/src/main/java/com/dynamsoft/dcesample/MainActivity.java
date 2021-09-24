@@ -206,13 +206,17 @@ public class MainActivity extends AppCompatActivity {
                 if (textResults != null && textResults.length > 0) {
                     resultNum++;
                     for (TextResult textResult:textResults){
-                        String text = textResult.barcodeText;
-                        String meta = text.split(",")[0];
-                        total = Integer.parseInt(meta.split("/")[1]);
-                        int index = Integer.parseInt(meta.split("/")[0]);
-                        results.put(index,text);
-                        if (results.size()==total){
-                            onReadingCompleted();
+                        try {
+                            String text = textResult.barcodeText;
+                            String meta = text.split(",")[0];
+                            total = Integer.parseInt(meta.split("/")[1]);
+                            int index = Integer.parseInt(meta.split("/")[0]);
+                            results.put(index,text);
+                            if (results.size()==total){
+                                onReadingCompleted();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
                     }
                     if (textResults[0].exception != null && textResults[0].exception.contains(ExpiredError)) {
@@ -351,20 +355,7 @@ public class MainActivity extends AppCompatActivity {
         btnDCERestart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                detectStart = false;
-                timerRunning = false;
-                ThumbnailDCE.removeAllViews();
-                mCameraEnhancer.stopScanning();
-                wasTimerRunning = false;
-                unit_ms = 0;
-                startTime = 0;
-                resultNum = 0;
-                filteredNum = 0;
-                notFilteredNum = 0;
-                totalTime = 0;
-                meanTime = 0;
-                total = 0;
-                results.clear();
+                restart();
             }
         });
 
@@ -389,7 +380,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void onReadingCompleted(){
         HashMap<Integer,String> clone = (HashMap<Integer, String>) results.clone();
-        results.clear();
+        restart();
         Intent intent = new Intent(this, ResultActivity.class);
         intent.putExtra("results", clone);
         startActivity(intent);
@@ -436,6 +427,23 @@ public class MainActivity extends AppCompatActivity {
             cameraException.printStackTrace();
         }
         super.onPause();
+    }
+
+    private void restart(){
+        detectStart = false;
+        timerRunning = false;
+        ThumbnailDCE.removeAllViews();
+        mCameraEnhancer.stopScanning();
+        wasTimerRunning = false;
+        unit_ms = 0;
+        startTime = 0;
+        resultNum = 0;
+        filteredNum = 0;
+        notFilteredNum = 0;
+        totalTime = 0;
+        meanTime = 0;
+        total = 0;
+        results.clear();
     }
 
     private void askForStoragePermissions() {
