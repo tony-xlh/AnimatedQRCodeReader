@@ -218,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
                             String text = textResult.barcodeText;
                             String meta = text.split(",")[0];
                             int totalOfThisOne = Integer.parseInt(meta.split("/")[1]);
-                            if (total!=totalOfThisOne && total!=0){
+                            if (total != totalOfThisOne && total!=0){
                                 total = totalOfThisOne;
                                 results.clear();
                                 return;

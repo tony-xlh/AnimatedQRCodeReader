@@ -29,6 +29,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 
 public class ResultActivity extends AppCompatActivity {
@@ -62,7 +63,9 @@ public class ResultActivity extends AppCompatActivity {
         HashMap<String,String> data = processResults();
         String dataURL = data.get("meta")+","+data.get("base64");
         textView.setText(dataURL);
-        webView.loadData(buildHTML(dataURL,data.get("base64")), "text/html", "UTF-8");
+        //webView.loadData(buildHTML(dataURL,data.get("base64")), "text/html", "UTF-8");
+        webView.getSettings().setDefaultTextEncodingName("UTF-8");
+        webView.loadData(buildHTML(dataURL,data.get("base64")), "text/html; charset=UTF-8", null);
     }
 
     private HashMap<String,String> processResults(){
@@ -92,14 +95,14 @@ public class ResultActivity extends AppCompatActivity {
     }
 
     private String buildHTML(String dataURL,String base64){
-        String head = "<!DOCTYPE html><html><body style=\"width:100%;\">";
+        String head = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head><body style=\"width:100%;\">";
         String body = "";
-        if (base64.contains("image")){
+        if (dataURL.contains("image")){
             body = "<img style=\"max-width:100%;\" src=\""+dataURL+"\" >";
-        } else if (base64.contains("text")){
+        } else if (dataURL.contains("text")){
             byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
             String s = new String(bytes);
-            body = "<pre>"+s+"</pre>";
+            body = s;
         }else{
             body = "Binary file.";
         }
