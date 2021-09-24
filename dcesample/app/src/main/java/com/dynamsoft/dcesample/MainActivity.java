@@ -63,8 +63,12 @@ import com.dynamsoft.dce.TorchState;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import static com.dynamsoft.dbr.EnumLocalizationMode.LM_SCAN_DIRECTLY;
 
@@ -101,6 +105,8 @@ public class MainActivity extends AppCompatActivity {
     private int resultNum = 0;
     private int notFilteredNum = 0;
     private int filteredNum = 0;
+    private int total = 0;
+    private HashMap<Integer,String> results = new HashMap<Integer,String>();
     private int wid;
     private int hgt;
     private JSONObject mJson;
@@ -199,6 +205,13 @@ public class MainActivity extends AppCompatActivity {
             public void textResultCallback(int i, TextResult[] textResults, Object o) {
                 if (textResults != null && textResults.length > 0) {
                     resultNum++;
+                    for (TextResult textResult:textResults){
+                        String text = textResult.barcodeText;
+                        String meta = text.split(",")[0];
+                        total = Integer.parseInt(meta.split("/")[1]);
+                        int index = Integer.parseInt(meta.split("/")[0]);
+                        results.put(index,text);
+                    }
                     if (textResults[0].exception != null && textResults[0].exception.contains(ExpiredError)) {
                         (MainActivity.this).runOnUiThread(new Runnable() {
                             @Override
@@ -347,6 +360,8 @@ public class MainActivity extends AppCompatActivity {
                 notFilteredNum = 0;
                 totalTime = 0;
                 meanTime = 0;
+                total = 0;
+                results.clear();
             }
         });
 
@@ -589,7 +604,20 @@ public class MainActivity extends AppCompatActivity {
 
                         NumberFormat num = NumberFormat.getPercentInstance();
                         String rates = num.format((double) resultNum / (double) (notFilteredNum + filteredNum));
-                        viewFrameMessage.setText("total frame number:" + (filteredNum + notFilteredNum) + "\ndiscarded frame number:" + filteredNum + "\nsuccessful number:" + resultNum + "\ndecode rate:" + rates);
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("total frame number:");
+                        sb.append(filteredNum + notFilteredNum);
+                        sb.append("\ndiscarded frame number:");
+                        sb.append(filteredNum);
+                        sb.append( "\nsuccessful number:");
+                        sb.append(resultNum);
+                        sb.append("\ndecode rate:");
+                        sb.append(rates);
+                        sb.append("\nprogress:");
+                        sb.append(results.keySet().size());
+                        sb.append("/");
+                        sb.append(total);
+                        viewFrameMessage.setText( sb.toString());
                         t = System.currentTimeMillis() - t;
                         timerHandler.postDelayed(this, 50 - t);
                     }
