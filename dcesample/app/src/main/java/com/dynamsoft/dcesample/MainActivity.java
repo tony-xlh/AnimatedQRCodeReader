@@ -205,11 +205,25 @@ public class MainActivity extends AppCompatActivity {
             public void textResultCallback(int i, TextResult[] textResults, Object o) {
                 if (textResults != null && textResults.length > 0) {
                     resultNum++;
+                    if (textResults[0].exception != null && textResults[0].exception.contains(ExpiredError)) {
+                        (MainActivity.this).runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                showExDialog(MainActivity.this, "Please visit: https://www.dynamsoft.com/customer/license/trialLicense?product=dbr&utm_source=installer&package=android to request for 30 days extension.");
+                            }
+                        });
+                    }
                     for (TextResult textResult:textResults){
                         try {
                             String text = textResult.barcodeText;
                             String meta = text.split(",")[0];
-                            total = Integer.parseInt(meta.split("/")[1]);
+                            int totalOfThisOne = Integer.parseInt(meta.split("/")[1]);
+                            if (total!=totalOfThisOne && total!=0){
+                                total = totalOfThisOne;
+                                results.clear();
+                                return;
+                            }
+                            total = totalOfThisOne;
                             int index = Integer.parseInt(meta.split("/")[0]);
                             results.put(index,text);
                             if (results.size()==total){
@@ -219,14 +233,7 @@ public class MainActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
                     }
-                    if (textResults[0].exception != null && textResults[0].exception.contains(ExpiredError)) {
-                        (MainActivity.this).runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                showExDialog(MainActivity.this, "Please visit: https://www.dynamsoft.com/customer/license/trialLicense?product=dbr&utm_source=installer&package=android to request for 30 days extension.");
-                            }
-                        });
-                    }
+
                 }
             }
         };
