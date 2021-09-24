@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">DCESample</string>
+    <string name="visit">Please visit: <a href="https://www.dynamsoft.com/customer/license/trialLicense?product=dbr&amp;utm_source=installer&amp;package=android">https://www.dynamsoft.com/customer/license/trialLicense?product=dbr&amp;utm_source=installer&amp;package=android</a> to request for 30 days extension.</string>
+</resources>
