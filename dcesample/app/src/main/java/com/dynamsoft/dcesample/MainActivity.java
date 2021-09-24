@@ -211,6 +211,9 @@ public class MainActivity extends AppCompatActivity {
                         total = Integer.parseInt(meta.split("/")[1]);
                         int index = Integer.parseInt(meta.split("/")[0]);
                         results.put(index,text);
+                        if (results.size()==total){
+                            onReadingCompleted();
+                        }
                     }
                     if (textResults[0].exception != null && textResults[0].exception.contains(ExpiredError)) {
                         (MainActivity.this).runOnUiThread(new Runnable() {
@@ -382,6 +385,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         runTime();
+    }
+
+    private void onReadingCompleted(){
+        HashMap<Integer,String> clone = (HashMap<Integer, String>) results.clone();
+        results.clear();
+        Intent intent = new Intent(this, ResultActivity.class);
+        intent.putExtra("results", clone);
+        startActivity(intent);
     }
 
     @Override
