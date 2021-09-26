@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<script type="text/javascript" src="qrcode.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+</head>
+<body>
+
+<input type="file" id="file" onchange="loadfile()"/>
+<input type="checkbox" id="loopChk" value="Loop" checked>
+<label for="loopChk">Loop</label>
+</br>
+<input type="button" value="Stop" onclick="stop();" />
+<input type="button" value="Start" onclick="start();" />
+<div id="progress"></div>
+<div id="placeHolder"></div>
+
+<script>
+var chunks = [];
+var currentIndex = 0;
+var stopLoop = false;
+function createQRCode(data){
+    var typeNumber = 0;
+    var errorCorrectionLevel = 'L';
+    var qr = qrcode(typeNumber, errorCorrectionLevel);
+    qr.addData(data);
+    qr.make();
+    document.getElementById('placeHolder').innerHTML = qr.createImgTag();
+}
+
+function stop(){
+    stopLoop=true;
+}
+
+function start(){
+    showAnimatedQRCode();
+}
+
+function loadfile() { 
+    let files = document.getElementById('file').files;
+    if (files.length == 0) {
+        return;
+    }
+    var file = files[0];
+    thisType = file.type,
+    thisSize = file.size,
+    fileReader = new FileReader();
+    fileReader.onload = function(e){
+        stop();
+        currentIndex=0;
+        loadBase64ToChunks(e.target.result);
+        stopLoop=false;
+        showAnimatedQRCode();
+    };
+    fileReader.onerror = function () {
+        console.warn('oops, something went wrong.');
+    };
+    fileReader.readAsDataURL(file);	
+}
+
+function loadBase64ToChunks(base64){
+    var chunkSize = 2500;
+    var num = Math.ceil(base64.length / chunkSize)
+    chunks=[];
+    for (var i=0;i<num;i++){
+        var start = i*chunkSize;
+        var chunk = base64.slice(start,start+chunkSize);
+        chunk = (i+1)+"/"+num+","+chunk;
+        chunks.push(chunk);
+    }
+    console.log(chunks);
+}
+
+function showAnimatedQRCode(){
+    createQRCode(chunks[currentIndex]);
+    currentIndex = currentIndex + 1
+    document.getElementById("progress").innerHTML = currentIndex + "/" + chunks.length;
+    if (currentIndex == chunks.length){
+        currentIndex = 0;
+        if (document.getElementById("loopChk").checked==false){
+            return;
+        }
+    }
+    if (stopLoop){
+        stopLoop=false;
+        return;
+    }
+    setTimeout("showAnimatedQRCode()",400);
+}
+
+</script>
+</body>
+</html>
