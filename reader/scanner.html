@@ -60,6 +60,7 @@
             processUnduplicatedRead(result);
         };
         await scanner.show();
+        updateSettings();
         startTime = new Date().getTime();
     })();
     
@@ -153,6 +154,30 @@
         link.setAttribute('download', "file");
         link.innerText="Download";
         document.body.appendChild(link);
+    }
+    
+    async function updateSettings(){
+        let settings = await scanner.getRuntimeSettings();
+        settings.deblurLevel = 0;
+        settings.barcodeFormatIds = Dynamsoft.DBR.EnumBarcodeFormat.BF_QR_CODE;
+        settings.localizationModes = [Dynamsoft.DBR.EnumLocalizationMode.LM_SCAN_DIRECTLY, 0, 0, 0, 0, 0, 0, 0, 0];
+        settings.region.regionMeasuredByPercentage = 1;
+        var video = document.getElementsByTagName("video")[0];
+        if (video.videoHeight>video.videoWidth){
+            settings.region.regionLeft = 0;
+            settings.region.regionTop = 25;
+            settings.region.regionRight = 100;
+            settings.region.regionBottom = 75;
+        }else{
+            settings.region.regionLeft = 25;
+            settings.region.regionTop = 0;
+            settings.region.regionRight = 75;
+            settings.region.regionBottom = 100;
+        }
+        await scanner.setModeArgument("BinarizationModes",0,"EnableFillBinaryVacancy","0");
+        await scanner.setModeArgument("BinarizationModes",0,"BlockSizeX","71");
+        await scanner.setModeArgument("BinarizationModes",0,"BlockSizeY","71");
+        await scanner.updateRuntimeSettings(settings);
     }
   </script>
 </body>
