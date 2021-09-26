@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
 <style>
 
-.statisticsContainer{
+.statistics-container{
     position:absolute;
     left:50%;
     bottom:0;
@@ -14,15 +14,15 @@
     text-shadow: 1px 1px black;
 }
 
-.statisticsContainerScanned{
-
+.statistics-container-scanned{
+    color: black;
 }
 
 
 </style>
 </head>
 <body>
-    <div id="scanner">
+    <div id="scanner" style="display:none;">
         <video class="dbrScanner-video" playsinline="true" style="width:100%;height:100%;position:absolute;left:0;top:0;"></video>
         <canvas class="dbrScanner-cvs-drawarea" style="width:100%;height:100%;position:absolute;left:0;top:0;"></canvas>
         <div class="dbrScanner-cvs-scanarea" style="width:100%;height:100%;position:absolute;left:0;top:0;">
@@ -31,9 +31,15 @@
         <select class="dbrScanner-sel-camera" style="margin:0 auto;position:absolute;left:0;top:0;height:30px;"></select>
         <select class="dbrScanner-sel-resolution" style="position:absolute;left:0;top:30px;"></select>
     </div>
-    <div class="statisticsContainer">
-        <pre id="statistics">
+    <div id="home">
+        <h1>Animated QR Code Reader</h1>
+        <input type="button" value="Start Scanning" onclick="startScanning();" />
+    </div>
+    <div id="statistics" class="statistics-container">
+        <pre id="statisticsPre">
         </pre>
+    </div>
+    <div id="decoded">
     </div>
   <script src="https://cdn.jsdelivr.net/npm/dynamsoft-javascript-barcode@8.6.1/dist/dbr.js"></script>
   <script>
@@ -43,9 +49,12 @@
     var successNum =0;
     var code_results = {};
     var total = 0;
+    var scanner = null;
     let pScanner = null;
     Dynamsoft.DBR.BarcodeScanner.organizationID = "100180174";
-    (async () => {
+    init();
+    
+    async function init(){
         scanner = await (pScanner = pScanner || Dynamsoft.DBR.BarcodeScanner.createInstance());
         await scanner.setUIElement(document.getElementById('scanner'));
         scanner.onFrameRead = results => {
@@ -59,23 +68,44 @@
         scanner.onUnduplicatedRead = (txt, result) => {
             processUnduplicatedRead(result);
         };
+        console.log("init done");
+    }
+    
+    async function startScanning(){
+        code_results={};
+        total = 0;
+        var scannerContainer = document.getElementById("scanner");
+        scannerContainer.style.display = "";
+        var homeContainer = document.getElementById("home");
+        homeContainer.style.display = "none";
+        var statisticsContainer = document.getElementById("statistics");
+        statisticsContainer.className="statistics-container";
+        var decodedContainer = document.getElementById("decoded");
+        decodedContainer.innerHTML="";
         await scanner.show();
         updateSettings();
         startTime = new Date().getTime();
-    })();
+    }
     
-    
-
+    async function stop(){
+        await scanner.stop()
+        var scannerContainer = document.getElementById("scanner");
+        scannerContainer.style.display = "none";
+        var homeContainer = document.getElementById("home");
+        homeContainer.style.display = "";
+        var statisticsContainer = document.getElementById("statistics");
+        statisticsContainer.className="statistics-container-scanned";
+    }
     
     function updateStatistics(){
-        var statisticsContainer = document.getElementById("statistics");
+        var statisticsPre = document.getElementById("statisticsPre");
         var endTime = new Date().getTime();
         statistics = "elapsed time: " + (endTime-startTime)/1000 +"s";
         statistics = statistics +"\ntotal frame number: " + framesRead;
         statistics = statistics +"\nsuccessful number: " + successNum;
         statistics = statistics +"\ndecoding rate: " + (successNum/framesRead).toFixed(2);
         statistics = statistics +"\nprogress: " + getObjectLength(code_results) + "/" + total;
-        statisticsContainer.innerHTML=statistics;
+        statisticsPre.innerHTML=statistics;
     }
     
     
@@ -113,14 +143,6 @@
         return Object.keys(obj);
     }
     
-    function stop(){
-        scanner.stop()
-        var scannerContainer = document.getElementById("scanner");
-        scannerContainer.style.display="none";
-        var statisticsContainer = document.getElementsByClassName("statisticsContainer")[0];
-        statisticsContainer.className="statisticsContainerScanned";
-    }
-    
     function showResult(){
         var jointData = "";
         for (var i=0;i<getObjectLength(code_results);i++){
@@ -136,13 +158,15 @@
         }
         var dataURL = meta +","+ jointData;
         appendDownloadLink(dataURL);
+        
+        var decodedContainer = document.getElementById("decoded");
         if (meta.indexOf("image")!=-1) {
             var img = document.createElement("img");
             img.src = dataURL;
             img.style.display = "block";
             img.style.maxHeight = "350px";
             img.style.maxWidth = "100%";
-            document.body.append(img);
+            decodedContainer.appendChild(img);
         }
         
     }
@@ -153,7 +177,8 @@
         link.setAttribute('href', dataURL);
         link.setAttribute('download', "file");
         link.innerText="Download";
-        document.body.appendChild(link);
+        var decodedContainer = document.getElementById("decoded");
+        decodedContainer.appendChild(link);
     }
     
     async function updateSettings(){
@@ -175,8 +200,8 @@
             settings.region.regionBottom = 100;
         }
         await scanner.setModeArgument("BinarizationModes",0,"EnableFillBinaryVacancy","0");
-        await scanner.setModeArgument("BinarizationModes",0,"BlockSizeX","71");
-        await scanner.setModeArgument("BinarizationModes",0,"BlockSizeY","71");
+        await scanner.setModeArgument("BinarizationModes",0,"BlockSizeX","61");
+        await scanner.setModeArgument("BinarizationModes",0,"BlockSizeY","61");
         await scanner.updateRuntimeSettings(settings);
     }
   </script>
