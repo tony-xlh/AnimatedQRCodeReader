@@ -11,6 +11,13 @@
 <input type="checkbox" id="loopChk" value="Loop" checked>
 <label for="loopChk">Loop</label>
 </br>
+<label for="name">Chunk size (bytes):</label>
+
+<input type="text" id="chunkSize" name="chunkSize" value="2500">
+<label for="name">FPS:</label>
+
+<input type="text" id="fps" name="fps" value="2.5">
+</br>
 <input type="button" value="Stop" onclick="stop();" />
 <input type="button" value="Start" onclick="start();" />
 <div id="progress"></div>
@@ -60,7 +67,8 @@ function loadfile() {
 }
 
 function loadBase64ToChunks(base64){
-    var chunkSize = 2500;
+    var chunkSize = parseInt(document.getElementById("chunkSize").value);
+    console.log("chunk size:"+chunkSize);
     var num = Math.ceil(base64.length / chunkSize)
     chunks=[];
     for (var i=0;i<num;i++){
@@ -86,7 +94,9 @@ function showAnimatedQRCode(){
         stopLoop=false;
         return;
     }
-    setTimeout("showAnimatedQRCode()",400);
+    var interval = parseInt(1000/document.getElementById("fps").value)
+    console.log("interval:"+interval);
+    setTimeout("showAnimatedQRCode()",interval);
 }
 
 </script>
