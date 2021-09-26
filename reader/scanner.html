@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-javascript-barcode@8.6.1/dist/dbr.js"></script>
 <style>
 
 .statistics-container{
@@ -34,14 +35,189 @@
     <div id="home">
         <h1>Animated QR Code Reader</h1>
         <input type="button" value="Start Scanning" onclick="startScanning();" />
+        </br>
+        <input type="checkbox" id="templateChk" value="Template" checked>
+        <label for="templateChk">Use template</label>
+        <p>Template:</p>
+        <textarea>
+        {
+  "ImageParameter": {
+    "BarcodeColourModes": [
+      {
+        "LibraryFileName": "",
+        "LibraryParameters": "",
+        "LightReflection": 1,
+        "Mode": "BICM_DARK_ON_LIGHT"
+      }
+    ],
+    "BarcodeComplementModes": [
+      {
+        "Mode": "BCM_SKIP"
+      }
+    ],
+    "BarcodeFormatIds": [
+      "BF_QR_CODE"
+    ],
+    "BarcodeFormatIds_2": null,
+    "BinarizationModes": [
+      {
+        "BlockSizeX": 61,
+        "BlockSizeY": 61,
+        "EnableFillBinaryVacancy": 1,
+        "ImagePreprocessingModesIndex": -1,
+        "LibraryFileName": "",
+        "LibraryParameters": "",
+        "Mode": "BM_LOCAL_BLOCK",
+        "ThreshValueCoefficient": 10
+      }
+    ],
+    "ColourClusteringModes": [
+      {
+        "Mode": "CCM_SKIP"
+      }
+    ],
+    "ColourConversionModes": [
+      {
+        "BlueChannelWeight": -1,
+        "GreenChannelWeight": -1,
+        "LibraryFileName": "",
+        "LibraryParameters": "",
+        "Mode": "CICM_GENERAL",
+        "RedChannelWeight": -1
+      }
+    ],
+    "DPMCodeReadingModes": [
+      {
+        "Mode": "DPMCRM_SKIP"
+      }
+    ],
+    "DeblurLevel": 3,
+    "DeblurModes": null,
+    "DeformationResistingModes": [
+      {
+        "Mode": "DRM_SKIP"
+      }
+    ],
+    "Description": "",
+    "ExpectedBarcodesCount": 0,
+    "FormatSpecificationNameArray": null,
+    "GrayscaleTransformationModes": [
+      {
+        "LibraryFileName": "",
+        "LibraryParameters": "",
+        "Mode": "GTM_ORIGINAL"
+      }
+    ],
+    "ImagePreprocessingModes": [
+      {
+        "LibraryFileName": "",
+        "LibraryParameters": "",
+        "Mode": "IPM_GENERAL"
+      }
+    ],
+    "IntermediateResultSavingMode": {
+      "Mode": "IRSM_MEMORY"
+    },
+    "IntermediateResultTypes": [
+      "IRT_NO_RESULT"
+    ],
+    "LocalizationModes": [
+      {
+        "LibraryFileName": "",
+        "LibraryParameters": "",
+        "Mode": "LM_SCAN_DIRECTLY"
+      }
+    ],
+    "MaxAlgorithmThreadCount": 4,
+    "Name": "Settings",
+    "PDFRasterDPI": 300,
+    "PDFReadingMode": {
+      "Mode": "PDFRM_AUTO"
+    },
+    "Pages": "",
+    "RegionDefinitionNameArray": [
+      "Settings"
+    ],
+    "RegionPredetectionModes": [
+      {
+        "LibraryFileName": "",
+        "LibraryParameters": "",
+        "Mode": "RPM_GENERAL"
+      }
+    ],
+    "ResultCoordinateType": "RCT_PIXEL",
+    "ReturnBarcodeZoneClarity": 0,
+    "ScaleDownThreshold": 2300,
+    "ScaleUpModes": [
+      {
+        "Mode": "SUM_AUTO"
+      }
+    ],
+    "TerminatePhase": "TP_BARCODE_RECOGNIZED",
+    "TextAssistedCorrectionMode": {
+      "BottomTextPercentageSize": 0,
+      "LeftTextPercentageSize": 0,
+      "LibraryFileName": "",
+      "LibraryParameters": "",
+      "Mode": "TACM_VERIFYING",
+      "RightTextPercentageSize": 0,
+      "TopTextPercentageSize": 0
+    },
+    "TextFilterModes": [
+      {
+        "LibraryFileName": "",
+        "LibraryParameters": "",
+        "MinImageDimension": 65536,
+        "Mode": "TFM_GENERAL_CONTOUR",
+        "Sensitivity": 0
+      }
+    ],
+    "TextResultOrderModes": [
+      {
+        "Mode": "TROM_CONFIDENCE"
+      },
+      {
+        "Mode": "TROM_POSITION"
+      },
+      {
+        "Mode": "TROM_FORMAT"
+      }
+    ],
+    "TextureDetectionModes": [
+      {
+        "LibraryFileName": "",
+        "LibraryParameters": "",
+        "Mode": "TDM_GENERAL_WIDTH_CONCENTRATION",
+        "Sensitivity": 5
+      }
+    ],
+    "Timeout": 10000
+  },
+  "RegionDefinition": {
+    "BarcodeFormatIds": [
+      "BF_QR_CODE"
+    ],
+    "BarcodeFormatIds_2": null,
+    "Bottom": 100,
+    "ExpectedBarcodesCount": 1,
+    "FormatSpecificationNameArray": null,
+    "Left": 0,
+    "MeasuredByPercentage": 1,
+    "Name": "Settings",
+    "Right": 100,
+    "Top": 0
+  },
+  "Version": "3.0"
+}
+        </textarea>
     </div>
     <div id="statistics" class="statistics-container">
         <pre id="statisticsPre">
         </pre>
     </div>
     <div id="decoded">
+        
     </div>
-  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-javascript-barcode@8.6.1/dist/dbr.js"></script>
   <script>
     // initializes and uses the library
     var startTime = 0;
@@ -203,6 +379,14 @@
         await scanner.setModeArgument("BinarizationModes",0,"BlockSizeX","61");
         await scanner.setModeArgument("BinarizationModes",0,"BlockSizeY","61");
         await scanner.updateRuntimeSettings(settings);
+        if (document.getElementById("templateChk").checked){
+            var template = document.getElementsByTagName("textarea")[0].value;
+            if (template!=""){
+                await scanner.initRuntimeSettingsWithString(template);
+                console.log("template inited");
+            }
+        }
+        
     }
   </script>
 </body>
