@@ -325,15 +325,16 @@
             var index = i+1;
             var result = code_results[index];
             if (index == 1){
-                meta = result.split(",")[1]; //the first one contains data:image/jpeg;base64,
-                data = result.split(",")[2];
+                filename = result.split(",")[1]; //the first one contains filename,data:image/jpeg;base64,
+                meta = result.split(",")[2];
+                data = result.split(",")[3];
             }else{
                 data = result.split(",")[1];
             }
             jointData = jointData + data;
         }
         var dataURL = meta +","+ jointData;
-        appendDownloadLink(dataURL);
+        appendDownloadLink(dataURL,filename);
         
         var decodedContainer = document.getElementById("decoded");
         if (meta.indexOf("image")!=-1) {
@@ -347,11 +348,14 @@
         
     }
     
-    function appendDownloadLink(dataURL){
+    function appendDownloadLink(dataURL,filename){
         var link = document.createElement('a');
         link.setAttribute('target', '_blank');
         link.setAttribute('href', dataURL);
-        link.setAttribute('download', "file");
+        if (!filename){
+            filename = "file";
+        }
+        link.setAttribute('download', filename);
         link.innerText="Download";
         var decodedContainer = document.getElementById("decoded");
         decodedContainer.appendChild(link);

@@ -50,13 +50,11 @@ function loadfile() {
         return;
     }
     var file = files[0];
-    thisType = file.type,
-    thisSize = file.size,
     fileReader = new FileReader();
     fileReader.onload = function(e){
         stop();
         currentIndex=0;
-        loadBase64ToChunks(e.target.result);
+        loadBase64ToChunks(e.target.result,file.name);
         stopLoop=false;
         showAnimatedQRCode();
     };
@@ -66,14 +64,15 @@ function loadfile() {
     fileReader.readAsDataURL(file);	
 }
 
-function loadBase64ToChunks(base64){
+function loadBase64ToChunks(base64,filename){
+    var data = filename+","+base64;
     var chunkSize = parseInt(document.getElementById("chunkSize").value);
     console.log("chunk size:"+chunkSize);
-    var num = Math.ceil(base64.length / chunkSize)
+    var num = Math.ceil(data.length / chunkSize)
     chunks=[];
     for (var i=0;i<num;i++){
         var start = i*chunkSize;
-        var chunk = base64.slice(start,start+chunkSize);
+        var chunk = data.slice(start,start+chunkSize);
         chunk = (i+1)+"/"+num+","+chunk;
         chunks.push(chunk);
     }

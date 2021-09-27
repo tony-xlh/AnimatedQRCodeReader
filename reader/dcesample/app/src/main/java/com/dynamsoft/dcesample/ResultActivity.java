@@ -71,13 +71,15 @@ public class ResultActivity extends AppCompatActivity {
     private HashMap<String,String> processResults(){
         StringBuilder sb = new StringBuilder();
         String meta = "";
+        String filename = "";
         for (int i=0;i<results.size();i++){
             int index = i+1;
             String result = results.get(index);
             String data = "";
             if (index == 1){
-                meta = result.split(",")[1]; //the first one contains data:image/jpeg;base64,
-                data = result.split(",")[2];
+                filename = result.split(",")[1];
+                meta = result.split(",")[2]; //the first one contains filename,data:image/jpeg;base64,
+                data = result.split(",")[3];
             }else{
                 data = result.split(",")[1];
             }
@@ -89,6 +91,7 @@ public class ResultActivity extends AppCompatActivity {
         data.put("base64",base64);
         data.put("meta",meta);
         data.put("mime",mime);
+        data.put("filename",filename);
         Log.d("DBR", mime);
         Log.d("DBR", base64);
         return data;
@@ -128,7 +131,12 @@ public class ResultActivity extends AppCompatActivity {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_TITLE, getFilename());
         startActivityForResult(intent, CREATE_FILE);
+    }
+
+    private String getFilename(){
+        return results.get(1).split(",")[1];
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
