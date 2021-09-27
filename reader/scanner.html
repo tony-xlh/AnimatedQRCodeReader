@@ -31,11 +31,14 @@
         </div>
         <select class="dbrScanner-sel-camera" style="margin:0 auto;position:absolute;left:0;top:0;height:30px;"></select>
         <select class="dbrScanner-sel-resolution" style="position:absolute;left:0;top:30px;"></select>
+        <input type="button" value="Stop" onclick="stop();"  style="position:absolute;right:0;top:0;"/>
     </div>
     <div id="home">
         <h1>Animated QR Code Reader</h1>
         <input type="button" value="Start Scanning" onclick="startScanning();" />
         </br>
+        <input type="checkbox" id="continuousChk" value="continuous" checked>
+        <label for="continuousChk">Continuous Scan</label>
         <input type="checkbox" id="scandirectChk" value="scandirect" checked>
         <label for="scandirectChk">Use scan-directly</label>
         <input type="checkbox" id="largeBlockSizeChk" value="largeBlockSize" checked>
@@ -222,8 +225,10 @@
         <pre id="statisticsPre">
         </pre>
     </div>
-    <div id="decoded">
-        
+    <div id="decodedResults">
+        Results:
+        <ol id="decodedList">
+        </ol>
     </div>
   <script>
     // initializes and uses the library
@@ -233,6 +238,7 @@
     var code_results = {};
     var total = 0;
     var scanner = null;
+    
     let pScanner = null;
     Dynamsoft.DBR.BarcodeScanner.organizationID = "100180174";
     init();
@@ -246,51 +252,59 @@
             if (results.length > 0) {
                 successNum = successNum + 1;
             };
-            updateStatistics();
+            var endTime = new Date().getTime();
+            updateStatistics(endTime-startTime);
         };
         scanner.onUnduplicatedRead = (txt, result) => {
+            
             processUnduplicatedRead(result);
         };
         console.log("init done");
     }
     
     async function startScanning(){
-        code_results={};
-        total = 0;
+        resetResults();
         var scannerContainer = document.getElementById("scanner");
         scannerContainer.style.display = "";
         var homeContainer = document.getElementById("home");
         homeContainer.style.display = "none";
         var statisticsContainer = document.getElementById("statistics");
         statisticsContainer.className="statistics-container";
-        var decodedContainer = document.getElementById("decoded");
-        decodedContainer.innerHTML="";
+        var decodedResultsContainer = document.getElementById("decodedResults");
+        decodedResultsContainer.style.display = "none";
+        var decodedList = document.getElementById("decodedList");
+        decodedList.innerHTML="";
         await scanner.show();
         updateSettings();
         startTime = new Date().getTime();
     }
     
+    function resetResults(){
+        code_results={};
+        total = 0;
+    }
+    
     async function stop(){
-        await scanner.stop()
+        await scanner.stop();
         var scannerContainer = document.getElementById("scanner");
         scannerContainer.style.display = "none";
         var homeContainer = document.getElementById("home");
         homeContainer.style.display = "";
         var statisticsContainer = document.getElementById("statistics");
         statisticsContainer.className="statistics-container-scanned";
+        var decodedResultsContainer = document.getElementById("decodedResults");
+        decodedResultsContainer.style.display = "";
     }
     
-    function updateStatistics(){
+    function updateStatistics(timeElapsed){
         var statisticsPre = document.getElementById("statisticsPre");
-        var endTime = new Date().getTime();
-        statistics = "elapsed time: " + (endTime-startTime)/1000 +"s";
+        statistics = "elapsed time: " + (timeElapsed)/1000 +"s";
         statistics = statistics +"\ntotal frame number: " + framesRead;
         statistics = statistics +"\nsuccessful number: " + successNum;
-        statistics = statistics +"\ndecoding rate: " + (successNum/framesRead).toFixed(2);
+        statistics = statistics +"\nsuccess fps: " + (successNum/(timeElapsed/1000)).toFixed(2);
         statistics = statistics +"\nprogress: " + getObjectLength(code_results) + "/" + total;
         statisticsPre.innerHTML=statistics;
     }
-    
     
     function processUnduplicatedRead(result){
         var text = result["barcodeText"];
@@ -308,14 +322,30 @@
             if (getObjectLength(code_results)==total){
                 console.log("completed");
                 console.log(code_results);
-                stop();
-                updateStatistics();
-                showResult();
+                onCompleted();
             }
         
         } catch(error) {
             console.log(error);
         }
+    }
+    
+    function onCompleted(){
+        var continuous = document.getElementById("continuousChk").checked;
+        var endTime = new Date().getTime();
+        timeElapsed = endTime - startTime;
+        if (continuous==false){
+            stop();
+            var decodedResultsContainer = document.getElementById("decodedResults");
+            decodedResultsContainer.style.display = "";
+        }else{
+            startTime = new Date().getTime();
+            framesRead = 0;
+            successNum = 0;
+        }
+        updateStatistics(timeElapsed);
+        showResult(timeElapsed);
+        resetResults();
     }
     
     function getObjectLength(obj){
@@ -326,7 +356,7 @@
         return Object.keys(obj);
     }
     
-    function showResult(){
+    function showResult(timeElapsed){
         var jointData = "";
         for (var i=0;i<getObjectLength(code_results);i++){
             var index = i+1;
@@ -340,22 +370,26 @@
             }
             jointData = jointData + data;
         }
+        var decodedList = document.getElementById("decodedList");
+        var item = document.createElement("li");
+        decodedList.appendChild(item);
+        var info = document.createElement("span");
+        info.innerText = " elapsed time:" + timeElapsed + "ms";
         var dataURL = meta +","+ jointData;
-        appendDownloadLink(dataURL,filename);
-        
-        var decodedContainer = document.getElementById("decoded");
+        appendDownloadLink(item, dataURL,filename);
+        item.appendChild(info);
         if (meta.indexOf("image")!=-1) {
             var img = document.createElement("img");
             img.src = dataURL;
             img.style.display = "block";
             img.style.maxHeight = "350px";
             img.style.maxWidth = "100%";
-            decodedContainer.appendChild(img);
+            item.appendChild(img);
         }
         
     }
     
-    function appendDownloadLink(dataURL,filename){
+    function appendDownloadLink(item, dataURL,filename){
         var link = document.createElement('a');
         link.setAttribute('target', '_blank');
         link.setAttribute('href', dataURL);
@@ -363,9 +397,8 @@
             filename = "file";
         }
         link.setAttribute('download', filename);
-        link.innerText="Download";
-        var decodedContainer = document.getElementById("decoded");
-        decodedContainer.appendChild(link);
+        link.innerText=filename;
+        item.appendChild(link);
     }
     
     async function updateSettings(){
