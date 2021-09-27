@@ -374,7 +374,7 @@
         var item = document.createElement("li");
         decodedList.appendChild(item);
         var info = document.createElement("span");
-        info.innerText = " elapsed time:" + timeElapsed + "ms";
+        info.innerText = " elapsed time: " + timeElapsed + "ms" +" speed: "+ (getImgSize(jointData)/1024/(timeElapsed/1000)).toFixed(2) +"KB/s";
         var dataURL = meta +","+ jointData;
         appendDownloadLink(item, dataURL,filename);
         item.appendChild(info);
@@ -388,6 +388,27 @@
         }
         
     }
+    
+    function getImgSize(data) {
+        var size = 0; //in bytes
+        if (data) {
+            const equalIndex = data.indexOf('='); 
+            if (equalIndex > 0) {
+                const str = data.substring(0, equalIndex); 
+                const strLength = str.length;
+                const fileLength = strLength - (strLength / 8) * 2;
+                size = Math.floor(fileLength);
+            } else {
+                const strLength = data.length;
+                const fileLength = strLength - (strLength / 8) * 2;
+                size = Math.floor(fileLength);
+            }
+        } else {
+            size = null;
+        }
+        return size; 
+    }
+    
     
     function appendDownloadLink(item, dataURL,filename){
         var link = document.createElement('a');
