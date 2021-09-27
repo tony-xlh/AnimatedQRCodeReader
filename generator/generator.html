@@ -27,13 +27,27 @@
 var chunks = [];
 var currentIndex = 0;
 var stopLoop = false;
+var maxWidth = 0;
+var maxHeight = 0;
 function createQRCode(data){
     var typeNumber = 0;
     var errorCorrectionLevel = 'L';
     var qr = qrcode(typeNumber, errorCorrectionLevel);
     qr.addData(data);
     qr.make();
-    document.getElementById('placeHolder').innerHTML = qr.createImgTag();
+    var placeHolder = document.getElementById('placeHolder');
+    placeHolder.innerHTML = qr.createSvgTag(); // or createImgTag
+    var img = placeHolder.children[0];
+    var width = img.getAttribute("width").replace("px","");
+    var height = img.getAttribute("height").replace("px","");
+    maxWidth = Math.max(maxWidth,width);
+    maxHeight = Math.max(maxHeight,height);
+    if (width<maxWidth){
+        img.setAttribute("width",maxWidth);
+    }
+    if (height<maxHeight){
+        img.setAttribute("height",maxHeight);
+    }    
 }
 
 function stop(){
@@ -54,6 +68,8 @@ function loadfile() {
     fileReader.onload = function(e){
         stop();
         currentIndex=0;
+        maxWidth=0;
+        maxHeight=0;
         loadBase64ToChunks(e.target.result,file.name);
         stopLoop=false;
         showAnimatedQRCode();
