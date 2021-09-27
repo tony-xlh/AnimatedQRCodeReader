@@ -248,6 +248,7 @@
     
     async function init(){
         scanner = await (pScanner = pScanner || Dynamsoft.DBR.BarcodeScanner.createInstance());
+        //scanner.ifSaveOriginalImageInACanvas = true;
         await scanner.setUIElement(document.getElementById('scanner'));
         scanner.onFrameRead = results => {
             
@@ -257,9 +258,10 @@
             };
             var endTime = new Date().getTime();
             updateStatistics(endTime-startTime);
+
         };
         scanner.onUnduplicatedRead = (txt, result) => {
-            
+            //document.body.append(scanner.getOriginalImageInACanvas());
             processUnduplicatedRead(result);
         };
         console.log("init done");
@@ -471,17 +473,20 @@
             return;
         }
         let reader = await Dynamsoft.DBR.BarcodeReader.createInstance();
-        updateSettings(reader);
+        await updateSettings(reader);
         var file = files[0];
         var timeOfBegin = new Date().getTime();
+        console.log("decoding");
         let results = await reader.decode(file);
         if (results.length>0){
+            console.log(results);
             var timeOfEnd = new Date().getTime();
             alert("Detected. Elapsed time: "+(timeOfEnd-timeOfBegin));
         }else{
             alert("No barcodes detected.")
         }
     }
+    
   </script>
 </body>
 
