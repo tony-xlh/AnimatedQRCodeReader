@@ -77,7 +77,7 @@ function loadfile() {
     fileReader.onerror = function () {
         console.warn('oops, something went wrong.');
     };
-    fileReader.readAsDataURL(file);	
+    fileReader.readAsDataURL(file);
 }
 
 function loadBase64ToChunks(base64,filename){

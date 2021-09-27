@@ -48,6 +48,9 @@
         </br>
         <input type="checkbox" id="templateChk" value="Template" checked>
         <label for="templateChk">Use template</label>
+        </br>
+        Decode file:
+        <input type="file" id="file" onchange="decodefile()"/>
         <p>Template:</p>
         <textarea>
         {
@@ -276,7 +279,7 @@
         decodedList.innerHTML="";
         startTime = new Date().getTime();
         await scanner.show();
-        updateSettings();
+        updateSettings(scanner);
     }
     
     function resetResults(){
@@ -422,9 +425,9 @@
         item.appendChild(link);
     }
     
-    async function updateSettings(){
-        await scanner.resetRuntimeSettings();
-        let settings = await scanner.getRuntimeSettings();
+    async function updateSettings(instance){
+        await instance.resetRuntimeSettings();
+        let settings = await instance.getRuntimeSettings();
         settings.deblurLevel = 0;
         settings.barcodeFormatIds = Dynamsoft.DBR.EnumBarcodeFormat.BF_QR_CODE;
         if (document.getElementById("scanRegionChk").checked){
@@ -446,20 +449,38 @@
             settings.localizationModes = [Dynamsoft.DBR.EnumLocalizationMode.LM_SCAN_DIRECTLY, 0, 0, 0, 0, 0, 0, 0, 0];
         }
         if (document.getElementById("largeBlockSizeChk").checked){
-            await scanner.setModeArgument("BinarizationModes",0,"EnableFillBinaryVacancy","0");
-            await scanner.setModeArgument("BinarizationModes",0,"BlockSizeX","61");
-            await scanner.setModeArgument("BinarizationModes",0,"BlockSizeY","61");
+            await instance.setModeArgument("BinarizationModes",0,"EnableFillBinaryVacancy","0");
+            await instance.setModeArgument("BinarizationModes",0,"BlockSizeX","61");
+            await instance.setModeArgument("BinarizationModes",0,"BlockSizeY","61");
         }
         
-        await scanner.updateRuntimeSettings(settings);
+        await instance.updateRuntimeSettings(settings);
         if (document.getElementById("templateChk").checked){
             var template = document.getElementsByTagName("textarea")[0].value;
             if (template!=""){
-                await scanner.initRuntimeSettingsWithString(template);
+                await instance.initRuntimeSettingsWithString(template);
                 console.log("template inited");
             }
         }
         
+    }
+    
+    async function decodefile(){
+        let files = document.getElementById('file').files;
+        if (files.length == 0) {
+            return;
+        }
+        let reader = await Dynamsoft.DBR.BarcodeReader.createInstance();
+        updateSettings(reader);
+        var file = files[0];
+        var timeOfBegin = new Date().getTime();
+        let results = await reader.decode(file);
+        if (results.length>0){
+            var timeOfEnd = new Date().getTime();
+            alert("Detected. Elapsed time: "+(timeOfEnd-timeOfBegin));
+        }else{
+            alert("No barcodes detected.")
+        }
     }
   </script>
 </body>
