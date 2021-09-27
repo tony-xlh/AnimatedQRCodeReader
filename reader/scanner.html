@@ -274,9 +274,10 @@
         decodedResultsContainer.style.display = "none";
         var decodedList = document.getElementById("decodedList");
         decodedList.innerHTML="";
+        startTime = new Date().getTime();
         await scanner.show();
         updateSettings();
-        startTime = new Date().getTime();
+        await scanner.setFrameRate(3);
     }
     
     function resetResults(){
