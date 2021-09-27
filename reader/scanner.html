@@ -36,6 +36,13 @@
         <h1>Animated QR Code Reader</h1>
         <input type="button" value="Start Scanning" onclick="startScanning();" />
         </br>
+        <input type="checkbox" id="scandirectChk" value="scandirect" checked>
+        <label for="scandirectChk">Use scan-directly</label>
+        <input type="checkbox" id="largeBlockSizeChk" value="largeBlockSize" checked>
+        <label for="largeBlockSizeChk">Large block size</label>
+        <input type="checkbox" id="scanRegionChk" value="Region" checked>
+        <label for="scanRegionChk">Regional Scanning</label>
+        </br>
         <input type="checkbox" id="templateChk" value="Template" checked>
         <label for="templateChk">Use template</label>
         <p>Template:</p>
@@ -362,26 +369,34 @@
     }
     
     async function updateSettings(){
+        await scanner.resetRuntimeSettings();
         let settings = await scanner.getRuntimeSettings();
         settings.deblurLevel = 0;
         settings.barcodeFormatIds = Dynamsoft.DBR.EnumBarcodeFormat.BF_QR_CODE;
-        settings.localizationModes = [Dynamsoft.DBR.EnumLocalizationMode.LM_SCAN_DIRECTLY, 0, 0, 0, 0, 0, 0, 0, 0];
-        settings.region.regionMeasuredByPercentage = 1;
-        var video = document.getElementsByTagName("video")[0];
-        if (video.videoHeight>video.videoWidth){
-            settings.region.regionLeft = 0;
-            settings.region.regionTop = 25;
-            settings.region.regionRight = 100;
-            settings.region.regionBottom = 75;
-        }else{
-            settings.region.regionLeft = 25;
-            settings.region.regionTop = 0;
-            settings.region.regionRight = 75;
-            settings.region.regionBottom = 100;
+        if (document.getElementById("scanRegionChk").checked){
+            settings.region.regionMeasuredByPercentage = 1;
+            var video = document.getElementsByTagName("video")[0];
+            if (video.videoHeight>video.videoWidth){
+                settings.region.regionLeft = 0;
+                settings.region.regionTop = 25;
+                settings.region.regionRight = 100;
+                settings.region.regionBottom = 75;
+            }else{
+                settings.region.regionLeft = 25;
+                settings.region.regionTop = 0;
+                settings.region.regionRight = 75;
+                settings.region.regionBottom = 100;
+            }
         }
-        await scanner.setModeArgument("BinarizationModes",0,"EnableFillBinaryVacancy","0");
-        await scanner.setModeArgument("BinarizationModes",0,"BlockSizeX","61");
-        await scanner.setModeArgument("BinarizationModes",0,"BlockSizeY","61");
+        if (document.getElementById("scandirectChk").checked){
+            settings.localizationModes = [Dynamsoft.DBR.EnumLocalizationMode.LM_SCAN_DIRECTLY, 0, 0, 0, 0, 0, 0, 0, 0];
+        }
+        if (document.getElementById("largeBlockSizeChk").checked){
+            await scanner.setModeArgument("BinarizationModes",0,"EnableFillBinaryVacancy","0");
+            await scanner.setModeArgument("BinarizationModes",0,"BlockSizeX","61");
+            await scanner.setModeArgument("BinarizationModes",0,"BlockSizeY","61");
+        }
+        
         await scanner.updateRuntimeSettings(settings);
         if (document.getElementById("templateChk").checked){
             var template = document.getElementsByTagName("textarea")[0].value;
