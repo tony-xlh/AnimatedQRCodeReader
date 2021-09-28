@@ -46,7 +46,7 @@
         <input type="checkbox" id="scanRegionChk" value="Region" checked>
         <label for="scanRegionChk">Regional Scanning</label>
         </br>
-        <input type="checkbox" id="templateChk" value="Template" checked>
+        <input type="checkbox" id="templateChk" value="Template">
         <label for="templateChk">Use template</label>
         </br>
         Decode file:
@@ -248,21 +248,18 @@
     
     async function init(){
         scanner = await (pScanner = pScanner || Dynamsoft.DBR.BarcodeScanner.createInstance());
-        //scanner.ifSaveOriginalImageInACanvas = true;
         await scanner.setUIElement(document.getElementById('scanner'));
         scanner.onFrameRead = results => {
             
             framesRead = framesRead + 1;
             if (results.length > 0) {
                 successNum = successNum + 1;
+                processRead(results[0]);
             };
             var endTime = new Date().getTime();
             updateStatistics(endTime-startTime);
-
         };
         scanner.onUnduplicatedRead = (txt, result) => {
-            //document.body.append(scanner.getOriginalImageInACanvas());
-            processUnduplicatedRead(result);
         };
         console.log("init done");
     }
@@ -281,7 +278,7 @@
         decodedList.innerHTML="";
         startTime = new Date().getTime();
         await scanner.show();
-        updateSettings(scanner);
+        updateSettings(scanner,false);
     }
     
     function resetResults(){
@@ -311,16 +308,19 @@
         statisticsPre.innerHTML=statistics;
     }
     
-    function processUnduplicatedRead(result){
+    function processRead(result){
         var text = result["barcodeText"];
         try {
             var meta = text.split(",")[0];
             var totalOfThisOne = parseInt(meta.split("/")[1]);
-            if (total != totalOfThisOne && total!=0){
-                total = totalOfThisOne;
-                code_results={};
-                return;
+            if (total!=0){
+                if (total != totalOfThisOne){
+                    total = totalOfThisOne;
+                    code_results={};
+                    return;
+                }
             }
+            
             total = totalOfThisOne;
             var index = parseInt(meta.split("/")[0]);
             code_results[index]=text;
@@ -427,26 +427,29 @@
         item.appendChild(link);
     }
     
-    async function updateSettings(instance){
+    async function updateSettings(instance,isReader){
         await instance.resetRuntimeSettings();
         let settings = await instance.getRuntimeSettings();
         settings.deblurLevel = 0;
         settings.barcodeFormatIds = Dynamsoft.DBR.EnumBarcodeFormat.BF_QR_CODE;
-        if (document.getElementById("scanRegionChk").checked){
-            settings.region.regionMeasuredByPercentage = 1;
-            var video = document.getElementsByTagName("video")[0];
-            if (video.videoHeight>video.videoWidth){
-                settings.region.regionLeft = 0;
-                settings.region.regionTop = 25;
-                settings.region.regionRight = 100;
-                settings.region.regionBottom = 75;
-            }else{
-                settings.region.regionLeft = 25;
-                settings.region.regionTop = 0;
-                settings.region.regionRight = 75;
-                settings.region.regionBottom = 100;
+        if (isReader==false){
+            if (document.getElementById("scanRegionChk").checked){
+                settings.region.regionMeasuredByPercentage = 1;
+                var video = document.getElementsByTagName("video")[0];
+                if (video.videoHeight>video.videoWidth){
+                    settings.region.regionLeft = 0;
+                    settings.region.regionTop = 25;
+                    settings.region.regionRight = 100;
+                    settings.region.regionBottom = 75;
+                }else{
+                    settings.region.regionLeft = 25;
+                    settings.region.regionTop = 0;
+                    settings.region.regionRight = 75;
+                    settings.region.regionBottom = 100;
+                }
             }
         }
+        
         if (document.getElementById("scandirectChk").checked){
             settings.localizationModes = [Dynamsoft.DBR.EnumLocalizationMode.LM_SCAN_DIRECTLY, 0, 0, 0, 0, 0, 0, 0, 0];
         }
@@ -473,7 +476,7 @@
             return;
         }
         let reader = await Dynamsoft.DBR.BarcodeReader.createInstance();
-        await updateSettings(reader);
+        await updateSettings(reader,true);
         var file = files[0];
         var timeOfBegin = new Date().getTime();
         console.log("decoding");
