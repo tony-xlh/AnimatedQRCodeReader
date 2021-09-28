@@ -265,6 +265,10 @@
     }
     
     async function startScanning(){
+        if (scanner==null){
+            alert("Please wait for the initialization of the scanner.")
+            return;
+        }
         resetResults();
         var scannerContainer = document.getElementById("scanner");
         scannerContainer.style.display = "";
