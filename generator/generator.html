@@ -14,9 +14,9 @@
 <label for="name">Chunk size (bytes):</label>
 
 <input type="text" id="chunkSize" name="chunkSize" value="2500">
-<label for="name">FPS:</label>
+<label for="name">Extra interval (ms):</label>
 
-<input type="text" id="fps" name="fps" value="2">
+<input type="text" id="interval" name="interval" value="500">
 </br>
 <input type="button" value="Stop" onclick="stop();" />
 <input type="button" value="Start" onclick="start();" />
@@ -109,7 +109,7 @@ function showAnimatedQRCode(){
         stopLoop=false;
         return;
     }
-    var interval = parseInt(1000/document.getElementById("fps").value)
+    var interval = parseInt(document.getElementById("interval").value)
     console.log("interval:"+interval);
     setTimeout("showAnimatedQRCode()",interval);
 }
