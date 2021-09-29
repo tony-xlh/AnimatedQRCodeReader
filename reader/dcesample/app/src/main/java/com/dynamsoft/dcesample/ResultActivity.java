@@ -172,7 +172,7 @@ public class ResultActivity extends AppCompatActivity {
 
     private String getFilename(){
         String text = (String) results.get(1).get("text"); // 1/10|filename|mimetype
-        int startIndex = text.indexOf("|");
+        int startIndex = text.indexOf("|")+1;
         int endIndex = text.indexOf("|",startIndex+1);
         String filename = null;
         try {
