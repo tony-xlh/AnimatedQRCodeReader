@@ -29,6 +29,8 @@ var currentIndex = 0;
 var stopLoop = false;
 var maxWidth = 0;
 var maxHeight = 0;
+qrcode.stringToBytes = function(data) { return data; };
+
 function createQRCode(data){
     var typeNumber = 0;
     var errorCorrectionLevel = 'L';
@@ -70,18 +72,19 @@ function loadfile() {
         currentIndex=0;
         maxWidth=0;
         maxHeight=0;
-        loadBase64ToChunks(e.target.result,file.name);
+        loadArrayBufferToChunks(e.target.result,file.name, file.type);
         stopLoop=false;
         showAnimatedQRCode();
     };
     fileReader.onerror = function () {
         console.warn('oops, something went wrong.');
     };
-    fileReader.readAsDataURL(file);
+    fileReader.readAsArrayBuffer(file);
 }
 
-function loadBase64ToChunks(base64,filename){
-    var data = filename+","+base64;
+function loadArrayBufferToChunks(bytes,filename,type){
+    var bytes = new Uint8Array(bytes);
+    var data = concatTypedArrays(stringToBytes(encodeURIComponent(filename)+"|"+type+"|"),bytes)
     var chunkSize = parseInt(document.getElementById("chunkSize").value);
     console.log("chunk size:"+chunkSize);
     var num = Math.ceil(data.length / chunkSize)
@@ -89,7 +92,8 @@ function loadBase64ToChunks(base64,filename){
     for (var i=0;i<num;i++){
         var start = i*chunkSize;
         var chunk = data.slice(start,start+chunkSize);
-        chunk = (i+1)+"/"+num+","+chunk;
+        var meta = (i+1)+"/"+num+"|";
+        chunk = concatTypedArrays(stringToBytes(meta),chunk);
         chunks.push(chunk);
     }
     console.log(chunks);
@@ -112,6 +116,25 @@ function showAnimatedQRCode(){
     var interval = parseInt(document.getElementById("interval").value)
     console.log("interval:"+interval);
     setTimeout("showAnimatedQRCode()",interval);
+}
+
+function stringToBytes(s) {
+    var bytes = [];
+    for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        bytes.push(c & 0xff);
+    }
+    return bytes;
+}
+
+//https://stackoverflow.com/questions/33702838/how-to-append-bytes-multi-bytes-and-buffer-to-arraybuffer-in-javascript
+function concatTypedArrays(a, b) { //common array + unint8 array
+    var newLength = a.length + b.byteLength;
+    console.log(newLength);
+    var c = new Uint8Array(newLength);
+    c.set(a, 0);
+    c.set(b, a.length);
+    return c;
 }
 
 </script>

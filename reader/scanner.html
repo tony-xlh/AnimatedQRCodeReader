@@ -315,7 +315,7 @@
     function processRead(result){
         var text = result["barcodeText"];
         try {
-            var meta = text.split(",")[0];
+            var meta = text.split("|")[0];
             var totalOfThisOne = parseInt(meta.split("/")[1]);
             if (total!=0){
                 if (total != totalOfThisOne){
@@ -327,7 +327,7 @@
             
             total = totalOfThisOne;
             var index = parseInt(meta.split("/")[0]);
-            code_results[index]=text;
+            code_results[index]=result;
             if (getObjectLength(code_results)==total){
                 console.log("completed");
                 console.log(code_results);
@@ -354,7 +354,6 @@
         }
         updateStatistics(timeElapsed);
         showResult(timeElapsed);
-        resetResults();
     }
     
     function getObjectLength(obj){
@@ -365,29 +364,36 @@
         return Object.keys(obj);
     }
     
-    function showResult(timeElapsed){
-        var jointData = "";
+    async function showResult(timeElapsed){
+        var jointData = [];
         for (var i=0;i<getObjectLength(code_results);i++){
             var index = i+1;
             var result = code_results[index];
+            console.log(result);
+            var bytes = result.barcodeBytes;
+            var text = result.barcodeText;
             if (index == 1){
-                filename = result.split(",")[1]; //the first one contains filename,data:image/jpeg;base64,
-                meta = result.split(",")[2];
-                data = result.split(",")[3];
+                var filename = text.split("|")[1]; //the first one contains filename|image/webp|data
+                var mimeType = text.split("|")[2];
+                var firstSeparatorIndex = text.indexOf("|");
+                var secondSeparatorIndex = text.indexOf("|",firstSeparatorIndex+1);
+                var dataStart = text.indexOf("|",secondSeparatorIndex+1)+1;
+                data = bytes.slice(dataStart,bytes.length);
             }else{
-                data = result.split(",")[1];
+                var dataStart = text.indexOf("|")+1;
+                data = bytes.slice(dataStart,bytes.length);
             }
-            jointData = jointData + data;
+            jointData = jointData.concat(data);
         }
         var decodedList = document.getElementById("decodedList");
         var item = document.createElement("li");
         decodedList.appendChild(item);
-        var info = document.createElement("span");
-        info.innerText = " elapsed time: " + timeElapsed + "ms" +" speed: "+ (getImgSize(jointData)/1024/(timeElapsed/1000)).toFixed(2) +"KB/s";
-        var dataURL = meta +","+ jointData;
+        var dataURL = await ArraybufferAsDataURL(jointData,mimeType);
         appendDownloadLink(item, dataURL,filename);
+        var info = document.createElement("span");
+        info.innerText = " elapsed time: " + timeElapsed + "ms" +" speed: "+ (jointData.length/1024/(timeElapsed/1000)).toFixed(2) +"KB/s";
         item.appendChild(info);
-        if (meta.indexOf("image")!=-1) {
+        if (dataURL.indexOf("image")!=-1) {
             var img = document.createElement("img");
             img.src = dataURL;
             img.style.display = "block";
@@ -395,29 +401,34 @@
             img.style.maxWidth = "100%";
             item.appendChild(img);
         }
-        
+        resetResults();
+    }
+    //https://stackoverflow.com/questions/12710001/how-to-convert-uint8-array-to-base64-encoded-string
+    const ArraybufferAsDataURL = async (data,mimeType) => {
+        // Use a FileReader to generate a base64 data URI
+        const dataUrl = await new Promise((r) => {
+            const reader = new FileReader()
+            reader.onload = () => r(reader.result)
+            var array = ConvertToUInt8Array(data);
+            var blob = new Blob([array],{type: mimeType});
+            reader.readAsDataURL(blob)
+        })
+
+        /*
+        The result looks like 
+        "data:application/octet-stream;base64,<your base64 data>", 
+        so we split off the beginning:
+        */
+        return dataUrl;
     }
     
-    function getImgSize(data) {
-        var size = 0; //in bytes
-        if (data) {
-            const equalIndex = data.indexOf('='); 
-            if (equalIndex > 0) {
-                const str = data.substring(0, equalIndex); 
-                const strLength = str.length;
-                const fileLength = strLength - (strLength / 8) * 2;
-                size = Math.floor(fileLength);
-            } else {
-                const strLength = data.length;
-                const fileLength = strLength - (strLength / 8) * 2;
-                size = Math.floor(fileLength);
-            }
-        } else {
-            size = null;
+    function ConvertToUInt8Array(data){
+        var array = new Uint8Array(data.length);
+        for (var i=0;i<data.length;i++){
+            array[i] = data[i];
         }
-        return size; 
+        return array;
     }
-    
     
     function appendDownloadLink(item, dataURL,filename){
         var link = document.createElement('a');
@@ -426,6 +437,7 @@
         if (!filename){
             filename = "file";
         }
+        filename = decodeURIComponent(filename);
         link.setAttribute('download', filename);
         link.innerText=filename;
         item.appendChild(link);
