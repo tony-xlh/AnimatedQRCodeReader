@@ -18,6 +18,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.dynamsoft.dbr.TextResult;
 import com.dynamsoft.dce.CameraView;
 
 import java.io.BufferedWriter;
@@ -27,23 +28,31 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 public class ResultActivity extends AppCompatActivity {
     WebView webView;
     TextView textView;
     Button saveButton;
-    private HashMap<Integer,String> results;
+    Long timeElapsed;
+    private HashMap<Integer, HashMap<String,Object>> results;
     private static final int CREATE_FILE = 1;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_result);
         Intent intent = getIntent();
-        results = (HashMap<Integer, String>) intent.getSerializableExtra("results");
+        results = (HashMap<Integer, HashMap<String,Object>>) intent.getSerializableExtra("results");
+        timeElapsed = (Long) intent.getExtras().get(("timeElapsed"));
         textView = findViewById(R.id.textView);
         webView = findViewById(R.id.webView);
         saveButton = findViewById(R.id.saveButton);
@@ -60,58 +69,84 @@ public class ResultActivity extends AppCompatActivity {
     }
 
     private void showResults(){
-        HashMap<String,String> data = processResults();
-        String dataURL = data.get("meta")+","+data.get("base64");
-        textView.setText(dataURL);
+        HashMap<String,Object> data = processResults();
+        String dataURL = (String) data.get("dataURL");
+        String speed = (String) data.get("speed");
+        textView.setText(speed +" "+ dataURL);
         //webView.loadData(buildHTML(dataURL,data.get("base64")), "text/html", "UTF-8");
         webView.getSettings().setDefaultTextEncodingName("UTF-8");
-        webView.loadData(buildHTML(dataURL,data.get("base64")), "text/html; charset=UTF-8", null);
+        webView.loadData(buildHTML(dataURL), "text/html; charset=UTF-8", null);
     }
 
-    private HashMap<String,String> processResults(){
-        StringBuilder sb = new StringBuilder();
-        String meta = "";
+    private HashMap<String,Object> processResults(){
+        List<Byte> bytesList = new ArrayList<Byte>();
+        String mime = "";
         String filename = "";
         for (int i=0;i<results.size();i++){
             int index = i+1;
-            String result = results.get(index);
+            HashMap<String,Object> resultMap = results.get(index);
+            String text = (String) resultMap.get("text");
+            byte[] bytes = (byte[]) resultMap.get("bytes");
             String data = "";
             if (index == 1){
-                filename = result.split(",")[1];
-                meta = result.split(",")[2]; //the first one contains filename,data:image/jpeg;base64,
-                data = result.split(",")[3];
+                //the first one contains 1/10|filename|image/jpeg|
+                int firstSeparatorIndex = text.indexOf("|");
+                int secondSeparatorIndex = text.indexOf("|",firstSeparatorIndex+1);
+                int dataStart = text.indexOf("|",secondSeparatorIndex+1)+1;
+                filename = text.substring(firstSeparatorIndex,secondSeparatorIndex);
+                mime = text.substring(secondSeparatorIndex+1,dataStart-1);
+                byte[] slice = Arrays.copyOfRange(bytes, dataStart, bytes.length);
+                for (Byte b:slice){
+                    bytesList.add(b);
+                }
             }else{
-                data = result.split(",")[1];
+                int dataStart = text.indexOf("|")+1;
+                byte[] slice = Arrays.copyOfRange(bytes, dataStart, bytes.length);
+                for (Byte b:slice){
+                    bytesList.add(b);
+                }
             }
-            sb.append(data);
+
         }
-        String base64 = sb.toString();
-        String mime = meta.substring(meta.indexOf(":")+1,meta.indexOf(";"));
-        HashMap<String,String> data = new HashMap<String,String>();
-        data.put("base64",base64);
-        data.put("meta",meta);
+        HashMap<String,Object> data = new HashMap<String, Object>();
+        byte[] bytes = BytesListAsArray(bytesList);
+        String base64 = Base64.encodeToString(bytes,Base64.DEFAULT);
+        String dataURL= "data:"+mime+";base64,"+base64;
+        double speed = 1000.0*bytes.length/1024/timeElapsed;
+        String formattedSpeed = String.format("%.2f",speed);
+        data.put("bytes",bytes);
+        data.put("dataURL",dataURL);
         data.put("mime",mime);
+        data.put("speed",formattedSpeed+"KB/s");
+        try {
+            filename = URLDecoder.decode(filename, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         data.put("filename",filename);
-        Log.d("DBR", mime);
-        Log.d("DBR", base64);
         return data;
     }
 
-    private String buildHTML(String dataURL,String base64){
+    private byte[] BytesListAsArray(List<Byte> data){
+        byte[] bytes = new byte[data.size()];
+        int index=0;
+        for (Byte b:data){
+            bytes[index]=b;
+            index=index+1;
+        }
+        return bytes;
+    }
+
+    private String buildHTML(String dataURL){
         String head = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head><body style=\"width:100%;\">";
         String body = "";
         if (dataURL.contains("image")){
             body = "<img style=\"max-width:100%;\" src=\""+dataURL+"\" >";
-        } else if (dataURL.contains("text")){
-            byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
-            String s = new String(bytes);
-            body = s;
         }else{
             body = "Binary file.";
         }
         String tail = "</body></html>";
         String html = head+body+tail;
-        Log.d("DBR",html);
         return html;
     }
 
@@ -136,7 +171,16 @@ public class ResultActivity extends AppCompatActivity {
     }
 
     private String getFilename(){
-        return results.get(1).split(",")[1];
+        String text = (String) results.get(1).get("text"); // 1/10|filename|mimetype
+        int startIndex = text.indexOf("|");
+        int endIndex = text.indexOf("|",startIndex+1);
+        String filename = null;
+        try {
+            filename = URLDecoder.decode(text.substring(startIndex,endIndex), StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return filename;
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
@@ -149,8 +193,8 @@ public class ResultActivity extends AppCompatActivity {
             if (resultData != null) {
                 uri = resultData.getData();
                 // Perform operations on the document using its URI.
-                HashMap<String, String> data = processResults();
-                byte[] bytes = Base64.decode(data.get("base64"), Base64.DEFAULT);
+                HashMap<String, Object> data = processResults();
+                byte[] bytes = (byte[]) data.get("bytes");
 
                 try {
                     OutputStream out = getContentResolver().openOutputStream(uri);

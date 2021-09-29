@@ -30,6 +30,7 @@ import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -106,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
     private int notFilteredNum = 0;
     private int filteredNum = 0;
     private int total = 0;
-    private HashMap<Integer,String> results = new HashMap<Integer,String>();
+    private HashMap<Integer, HashMap<String, Object>> results = new HashMap<>();
     private int wid;
     private int hgt;
     private JSONObject mJson;
@@ -216,7 +217,9 @@ public class MainActivity extends AppCompatActivity {
                     for (TextResult textResult:textResults){
                         try {
                             String text = textResult.barcodeText;
-                            String meta = text.split(",")[0];
+                            Log.d("DBR",text);
+                            String meta = text.substring(0,text.indexOf("|"));
+                            Log.d("DBR",meta);
                             int totalOfThisOne = Integer.parseInt(meta.split("/")[1]);
                             if (total != totalOfThisOne && total!=0){
                                 total = totalOfThisOne;
@@ -225,7 +228,10 @@ public class MainActivity extends AppCompatActivity {
                             }
                             total = totalOfThisOne;
                             int index = Integer.parseInt(meta.split("/")[0]);
-                            results.put(index,text);
+                            HashMap<String,Object> resultMap = new HashMap<>();
+                            resultMap.put("text",textResult.barcodeText);
+                            resultMap.put("bytes",textResult.barcodeBytes);
+                            results.put(index,resultMap);
                             if (results.size()==total){
                                 onReadingCompleted();
                             }
@@ -386,10 +392,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onReadingCompleted(){
-        HashMap<Integer,String> clone = (HashMap<Integer, String>) results.clone();
-        restart();
         Intent intent = new Intent(this, ResultActivity.class);
+        intent.putExtra("timeElapsed", System.currentTimeMillis()-startTime);
+        HashMap<Integer,Object> clone = (HashMap<Integer, Object>) results.clone();
+        restart();
         intent.putExtra("results", clone);
+
         startActivity(intent);
     }
 
