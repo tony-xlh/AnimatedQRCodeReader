@@ -259,6 +259,9 @@
             var endTime = new Date().getTime();
             updateStatistics(endTime-startTime);
         };
+        scanner.onPlayed = rsl =>{ 
+            startTime = new Date().getTime();
+        };
         scanner.onUnduplicatedRead = (txt, result) => {
         };
         console.log("init done");
@@ -280,7 +283,8 @@
         decodedResultsContainer.style.display = "none";
         var decodedList = document.getElementById("decodedList");
         decodedList.innerHTML="";
-        startTime = new Date().getTime();
+        framesRead = 0;
+        successNum = 0;
         await scanner.show();
         updateSettings(scanner,false);
     }
