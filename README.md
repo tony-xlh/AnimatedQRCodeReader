@@ -1,6 +1,6 @@
 # AnimatedQRCodeReader
 
-High speed animated QR code reader. The repo contains the generator as well.
+Animated QR code reader. The repo contains the generator as well.
 
 Using th generator and reader, it is possible to transfer data between two devices without Internet connection.
 
