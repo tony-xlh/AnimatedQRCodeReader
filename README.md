@@ -16,6 +16,10 @@ An Andoird project using [Dynamsoft Camera Enhancer](https://www.dynamsoft.com/c
 
 [Scanner](https://blog.xulihang.me/AnimatedQRCodeReader/reader/scanner.html)
 
+## Blog
+
+<https://www.dynamsoft.com/codepool/transfer-data-with-animated-qr-codes.html>
+
 ## References
 
 [txqr](https://github.com/divan/txqr/)
