@@ -2,7 +2,7 @@
 
 Animated QR code reader. The repo contains the generator as well.
 
-Using th generator and reader, it is possible to transfer data between two devices without Internet connection.
+Using the generator and reader, it is possible to transfer data between two devices without Internet connection.
 
 The generator and reader are implemented in JavaScript using the [QR code generator](https://github.com/kazuhikoarase/qrcode-generator/) and the [Dynamsoft Barcode Reader](https://www.dynamsoft.com/barcode-reader/overview/).
 
