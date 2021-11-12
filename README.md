@@ -10,6 +10,8 @@ An Andoird project using [Dynamsoft Camera Enhancer](https://www.dynamsoft.com/c
 
 ![](https://github.com/xulihang/AnimatedQRCodeReader/releases/download/builds/video.gif)
 
+PS: Dynamsoft Barcode Reader is a commercial SDK. You need to apply for a license to use it: [apply for a trial](https://www.dynamsoft.com/customer/license/trialLicense/?product=dbr).
+
 ## Online demo
 
 [Generator](https://blog.xulihang.me/AnimatedQRCodeReader/generator/generator.html)
