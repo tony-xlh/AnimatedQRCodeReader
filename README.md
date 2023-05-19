@@ -22,6 +22,12 @@ PS: Dynamsoft Barcode Reader is a commercial SDK. You need to apply for a licens
 
 <https://www.dynamsoft.com/codepool/transfer-data-with-animated-qr-codes.html>
 
+## What Advantages of Dynamsoft Barcode Reader Does this Demo Showcase?
+
+1. The ability to read high-version QR codes.
+2. The speed of reading barcodes from camera frames.
+3. The great customizability.
+
 ## References
 
 [txqr](https://github.com/divan/txqr/)
