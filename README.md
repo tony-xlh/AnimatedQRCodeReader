@@ -1,5 +1,7 @@
 # AnimatedQRCodeReader
 
+**Update:** There is a new cross-platform Ionic version which supports two-communication: <https://github.com/tony-xlh/QRTransfer/>
+
 Animated QR code reader. The repo contains the generator as well.
 
 Using the generator and reader, it is possible to transfer data between two devices without Internet connection.
