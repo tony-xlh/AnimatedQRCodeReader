@@ -16,9 +16,9 @@ PS: Dynamsoft Barcode Reader is a commercial SDK. You need to apply for a licens
 
 ## Online demo
 
-[Generator](https://blog.xulihang.me/AnimatedQRCodeReader/generator/generator.html)
+[Generator](https://tony-xlh.github.io/AnimatedQRCodeReader/generator/generator.html)
 
-[Scanner](https://blog.xulihang.me/AnimatedQRCodeReader/reader/scanner.html)
+[Scanner](https://tony-xlh.github.io/AnimatedQRCodeReader/reader/scanner.html)
 
 ## Blog
 
