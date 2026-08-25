@@ -13,7 +13,7 @@
 </br>
 <label for="name">Chunk size (bytes):</label>
 
-<input type="text" id="chunkSize" name="chunkSize" value="2900">
+<input type="text" id="chunkSize" name="chunkSize" value="1000">
 <label for="name">Extra interval (ms):</label>
 
 <input type="text" id="interval" name="interval" value="200">
@@ -35,6 +35,8 @@ var chunks = [];
 var totalScreens = 0;
 var currentIndex = 0;
 var stopLoop = false;
+// QR version (typeNumber) is fixed per transfer so every screen keeps the same size.
+var fixedTypeNumber = 0;
 qrcode.stringToBytes = function(data) { return data; };
 
 // 1st byte of the payload flags the encoding: ASCII 'R' = raw, ASCII 'Z' = deflate (gzip).
@@ -66,7 +68,7 @@ function renderScreen(chunkList) {
     var qrs = [];
     var maxModuleCount = 0;
     for (var i = 0; i < chunkList.length; i++) {
-        var qr = qrcode(0, 'L'); // typeNumber 0, error correction L
+        var qr = qrcode(fixedTypeNumber, 'L'); // fixed version per transfer, error correction L
         qr.addData(chunkList[i]);
         qr.make();
         qrs.push(qr);
@@ -172,6 +174,16 @@ function rebuildScreens() {
     var gridSize = getGridSize();
     var perScreen = gridSize * gridSize;
     totalScreens = Math.ceil(chunks.length / perScreen);
+    // Find the largest QR version any chunk needs and use it for every chunk,
+    // otherwise screens with smaller payloads render smaller QR codes.
+    var maxModules = 0;
+    for (var i = 0; i < chunks.length; i++) {
+        var qr = qrcode(0, 'L');
+        qr.addData(chunks[i]);
+        qr.make();
+        maxModules = Math.max(maxModules, qr.getModuleCount());
+    }
+    fixedTypeNumber = maxModules > 0 ? (maxModules - 17) / 4 : 0;
 }
 
 function showAnimatedQRCode(){
