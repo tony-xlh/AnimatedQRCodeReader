@@ -1,2 +1,11 @@
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven{url "https://download2.dynamsoft.com/maven/aar"}
+    }
+}
+
 include ':app'
 rootProject.name = "dcesample"

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Animated QR Code Reader"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginTop="24dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sender animation (embedded frames)"
+        android:textSize="13sp"
+        android:textColor="#888888"
+        android:layout_marginTop="4dp" />
+
+    <VideoView
+        android:id="@+id/anim_video"
+        android:layout_width="240dp"
+        android:layout_height="240dp"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/anim_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0/0"
+        android:textSize="13sp"
+        android:layout_marginTop="4dp" />
+
+    <Button
+        android:id="@+id/btn_simulate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Simulate Receive"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:id="@+id/sim_stats"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="13sp"
+        android:gravity="center"
+        android:layout_marginTop="8dp" />
+
+    <Button
+        android:id="@+id/btn_camera"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Open Camera"
+        android:layout_marginTop="16dp" />
+
+</LinearLayout>

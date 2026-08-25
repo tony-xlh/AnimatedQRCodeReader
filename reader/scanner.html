@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
-    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-javascript-barcode@9.0.0/dist/dbr.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dynamsoft-barcode-reader-bundle@11.6.2100/dist/dbr.bundle.js"></script>
 <style>
 
 .statistics-container{
@@ -24,216 +25,26 @@
 </head>
 <body>
     <div id="scanner" style="display:none;">
-        <svg class="dce-bg-loading"
-            style="display:none;position:absolute;left:0;top:0;right:0;bottom:0;margin:auto;width:40%;height:40%;fill:#aaa;animation:1s linear infinite dce-rotate;"
-            viewBox="0 0 1792 1792">
-            <path d="M1760 896q0 176-68.5 336t-184 275.5-275.5 184-336 68.5-336-68.5-275.5-184-184-275.5-68.5-336q0-213 97-398.5t265-305.5 374-151v228q-221 45-366.5 221t-145.5 406q0 130 51 248.5t136.5 204 204 136.5 248.5 51 248.5-51 204-136.5 136.5-204 51-248.5q0-230-145.5-406t-366.5-221v-228q206 31 374 151t265 305.5 97 398.5z" />
-        </svg>
-        <svg class="dce-bg-camera"
-            style="display:none;position:absolute;left:0;top:0;right:0;bottom:0;margin:auto;width:40%;height:40%;fill:#aaa;"
-            viewBox="0 0 2048 1792">
-            <path d="M1024 672q119 0 203.5 84.5t84.5 203.5-84.5 203.5-203.5 84.5-203.5-84.5-84.5-203.5 84.5-203.5 203.5-84.5zm704-416q106 0 181 75t75 181v896q0 106-75 181t-181 75h-1408q-106 0-181-75t-75-181v-896q0-106 75-181t181-75h224l51-136q19-49 69.5-84.5t103.5-35.5h512q53 0 103.5 35.5t69.5 84.5l51 136h224zm-704 1152q185 0 316.5-131.5t131.5-316.5-131.5-316.5-316.5-131.5-316.5 131.5-131.5 316.5 131.5 316.5 316.5 131.5z" />
-        </svg>
-        <div class="dce-video-container" style="position:absolute;left:0;top:0;width:100%;height:100%;"></div>
-        <div class="dce-scanarea" style="position:absolute;left:0;top:0;width:100%;height:100%;">
-            <div class="dce-scanlight" style="display:none;position:absolute;width:100%;height:3%;border-radius:50%;box-shadow:0px 0px 2vw 1px #00e5ff;background:#fff;animation:3s infinite dce-scanlight;user-select:none;"></div>
+        <div class="dce-video-container" style="position:absolute;left:0;top:0;width:100%;height:100%;">
+            <video id="video" autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video>
+            <canvas id="overlay" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;"></canvas>
         </div>
+        <div id="received" style="display:none;position:absolute;left:50%;top:56px;transform:translateX(-50%);color:#00e5ff;text-shadow:1px 1px black;font-size:20px;font-weight:bold;z-index:9;"></div>
         <div style="position: absolute;left: 0;top: 0;">
             <select class="dce-sel-camera" style="display: block;"></select>
-            <select class="dce-sel-resolution" style="display: block;margin-top: 5px;"></select>
         </div>
         <input type="button" value="Stop" onclick="stop();"  style="position:absolute;right:0;top:0;"/>
     </div>
+    <div id="transferNotice" style="display:none;position:fixed;top:0;left:0;right:0;padding:14px;background:#16a34a;color:#ffffff;font-size:16px;z-index:10;text-align:center;font-weight:bold;"></div>
     <div id="home">
         <h1>Animated QR Code Reader</h1>
         <input type="button" value="Start Scanning" onclick="startScanning();" />
         </br>
-        <input type="checkbox" id="continuousChk" value="continuous" checked>
-        <label for="continuousChk">Continuous Scan</label>
-        <input type="checkbox" id="scandirectChk" value="scandirect" checked>
-        <label for="scandirectChk">Use scan-directly</label>
-        <input type="checkbox" id="largeBlockSizeChk" value="largeBlockSize" checked>
-        <label for="largeBlockSizeChk">Large block size</label>
-        <input type="checkbox" id="scanRegionChk" value="Region" checked>
+        <input type="checkbox" id="scanRegionChk" value="Region">
         <label for="scanRegionChk">Regional Scanning</label>
-        </br>
-        <input type="checkbox" id="templateChk" value="Template">
-        <label for="templateChk">Use template</label>
         </br>
         Decode file:
         <input type="file" id="file" onchange="decodefile()"/>
-        <p>Template:</p>
-        <textarea>
-        {
-  "ImageParameter": {
-    "BarcodeColourModes": [
-      {
-        "LibraryFileName": "",
-        "LibraryParameters": "",
-        "LightReflection": 1,
-        "Mode": "BICM_DARK_ON_LIGHT"
-      }
-    ],
-    "BarcodeComplementModes": [
-      {
-        "Mode": "BCM_SKIP"
-      }
-    ],
-    "BarcodeFormatIds": [
-      "BF_QR_CODE"
-    ],
-    "BarcodeFormatIds_2": null,
-    "BinarizationModes": [
-      {
-        "BlockSizeX": 61,
-        "BlockSizeY": 61,
-        "EnableFillBinaryVacancy": 1,
-        "ImagePreprocessingModesIndex": -1,
-        "LibraryFileName": "",
-        "LibraryParameters": "",
-        "Mode": "BM_LOCAL_BLOCK",
-        "ThreshValueCoefficient": 10
-      }
-    ],
-    "ColourClusteringModes": [
-      {
-        "Mode": "CCM_SKIP"
-      }
-    ],
-    "ColourConversionModes": [
-      {
-        "BlueChannelWeight": -1,
-        "GreenChannelWeight": -1,
-        "LibraryFileName": "",
-        "LibraryParameters": "",
-        "Mode": "CICM_GENERAL",
-        "RedChannelWeight": -1
-      }
-    ],
-    "DPMCodeReadingModes": [
-      {
-        "Mode": "DPMCRM_SKIP"
-      }
-    ],
-    "DeblurLevel": 3,
-    "DeblurModes": null,
-    "DeformationResistingModes": [
-      {
-        "Mode": "DRM_SKIP"
-      }
-    ],
-    "Description": "",
-    "ExpectedBarcodesCount": 0,
-    "FormatSpecificationNameArray": null,
-    "GrayscaleTransformationModes": [
-      {
-        "LibraryFileName": "",
-        "LibraryParameters": "",
-        "Mode": "GTM_ORIGINAL"
-      }
-    ],
-    "ImagePreprocessingModes": [
-      {
-        "LibraryFileName": "",
-        "LibraryParameters": "",
-        "Mode": "IPM_GENERAL"
-      }
-    ],
-    "IntermediateResultSavingMode": {
-      "Mode": "IRSM_MEMORY"
-    },
-    "IntermediateResultTypes": [
-      "IRT_NO_RESULT"
-    ],
-    "LocalizationModes": [
-      {
-        "LibraryFileName": "",
-        "LibraryParameters": "",
-        "Mode": "LM_SCAN_DIRECTLY"
-      }
-    ],
-    "MaxAlgorithmThreadCount": 4,
-    "Name": "Settings",
-    "PDFRasterDPI": 300,
-    "PDFReadingMode": {
-      "Mode": "PDFRM_AUTO"
-    },
-    "Pages": "",
-    "RegionDefinitionNameArray": [
-      "Settings"
-    ],
-    "RegionPredetectionModes": [
-      {
-        "LibraryFileName": "",
-        "LibraryParameters": "",
-        "Mode": "RPM_GENERAL"
-      }
-    ],
-    "ResultCoordinateType": "RCT_PIXEL",
-    "ReturnBarcodeZoneClarity": 0,
-    "ScaleDownThreshold": 2300,
-    "ScaleUpModes": [
-      {
-        "Mode": "SUM_AUTO"
-      }
-    ],
-    "TerminatePhase": "TP_BARCODE_RECOGNIZED",
-    "TextAssistedCorrectionMode": {
-      "BottomTextPercentageSize": 0,
-      "LeftTextPercentageSize": 0,
-      "LibraryFileName": "",
-      "LibraryParameters": "",
-      "Mode": "TACM_VERIFYING",
-      "RightTextPercentageSize": 0,
-      "TopTextPercentageSize": 0
-    },
-    "TextFilterModes": [
-      {
-        "LibraryFileName": "",
-        "LibraryParameters": "",
-        "MinImageDimension": 65536,
-        "Mode": "TFM_GENERAL_CONTOUR",
-        "Sensitivity": 0
-      }
-    ],
-    "TextResultOrderModes": [
-      {
-        "Mode": "TROM_CONFIDENCE"
-      },
-      {
-        "Mode": "TROM_POSITION"
-      },
-      {
-        "Mode": "TROM_FORMAT"
-      }
-    ],
-    "TextureDetectionModes": [
-      {
-        "LibraryFileName": "",
-        "LibraryParameters": "",
-        "Mode": "TDM_GENERAL_WIDTH_CONCENTRATION",
-        "Sensitivity": 5
-      }
-    ],
-    "Timeout": 10000
-  },
-  "RegionDefinition": {
-    "BarcodeFormatIds": [
-      "BF_QR_CODE"
-    ],
-    "BarcodeFormatIds_2": null,
-    "Bottom": 100,
-    "ExpectedBarcodesCount": 1,
-    "FormatSpecificationNameArray": null,
-    "Left": 0,
-    "MeasuredByPercentage": 1,
-    "Name": "Settings",
-    "Right": 100,
-    "Top": 0
-  },
-  "Version": "3.0"
-}
-        </textarea>
     </div>
     <div id="statistics" class="statistics-container">
         <pre id="statisticsPre">
@@ -245,45 +56,37 @@
         </ol>
     </div>
   <script>
-    Dynamsoft.DBR.BarcodeReader.license = 'DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==';
-    // initializes and uses the library
-    var startTime = 0;
-    var framesRead = 0;
-    var successNum =0;
-    var code_results = {};
-    var total = 0;
-    var scanner = null;
-    
-    let pScanner = null;
+    const LICENSE_KEY = 'DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==';
+    let startTime = 0;
+    let framesRead = 0;
+    let successNum =0;
+    let code_results = {};
+    let total = 0;
+    let cvr = null;
+    let stream = null;
+    let scanning = false;
+    let videoEl, overlayCanvas, overlayCtx;
 
     init();
-    
+
     async function init(){
-        scanner = await (pScanner = pScanner || Dynamsoft.DBR.BarcodeScanner.createInstance());
-        await scanner.setUIElement(document.getElementById('scanner'));
-        scanner.onFrameRead = results => {
-            
-            framesRead = framesRead + 1;
-            if (results.length > 0) {
-                successNum = successNum + 1;
-                processRead(results[0]);
-            };
-            var endTime = new Date().getTime();
-            updateStatistics(endTime-startTime);
-        };
-        scanner.onPlayed = rsl =>{ 
-            startTime = new Date().getTime();
-        };
-        scanner.onUnduplicatedRead = (txt, result) => {
-        };
+        await Dynamsoft.License.LicenseManager.initLicense(LICENSE_KEY, true);
+        await Dynamsoft.Core.CoreModule.loadWasm(['DBR']);
+        cvr = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
+        videoEl = document.getElementById('video');
+        overlayCanvas = document.getElementById('overlay');
+        overlayCtx = overlayCanvas.getContext('2d');
         console.log("init done");
     }
-    
+
     async function startScanning(){
-        if (scanner==null){
+        if (cvr==null || cvr==undefined){
             alert("Please wait for the initialization of the scanner.")
             return;
         }
+        document.getElementById("transferNotice").style.display = "none";
+        var received = document.getElementById("received");
+        received.style.display = "none";
         resetResults();
         var scannerContainer = document.getElementById("scanner");
         scannerContainer.style.display = "";
@@ -297,17 +100,44 @@
         decodedList.innerHTML="";
         framesRead = 0;
         successNum = 0;
-        await scanner.show();
-        updateSettings(scanner,false);
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment'}});
+            videoEl.srcObject = stream;
+            await videoEl.play();
+        } catch (e) {
+            alert("Camera access failed: "+e.message);
+            stop();
+            return;
+        }
+        await updateSettings(cvr,false);
+        scanning = true;
+        scanLoop();
     }
-    
-    function resetResults(){
-        code_results={};
-        total = 0;
-    }
-    
+
+    const scanLoop = async () => {
+        if (!scanning) return;
+        startTime = startTime || performance.now();
+        if (videoEl.readyState >= 2) {
+            const canvas = document.createElement('canvas');
+            canvas.width = videoEl.videoWidth;
+            canvas.height = videoEl.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+            overlayCanvas.width = canvas.width;
+            overlayCanvas.height = canvas.height;
+            try {
+                const result = await cvr.capture(canvas, 'ReadBarcodes_Default');
+                if (scanning) onFrameRead(result);
+            } catch(e){
+                console.error(e);
+            }
+        }
+        if (scanning) requestAnimationFrame(scanLoop);
+    };
+
     async function stop(){
-        await scanner.stop();
+        scanning = false;
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
         var scannerContainer = document.getElementById("scanner");
         scannerContainer.style.display = "none";
         var homeContainer = document.getElementById("home");
@@ -316,8 +146,43 @@
         statisticsContainer.className="statistics-container-scanned";
         var decodedResultsContainer = document.getElementById("decodedResults");
         decodedResultsContainer.style.display = "";
+        document.getElementById("received").style.display = "none";
     }
-    
+
+    function onFrameRead(result){
+        framesRead = framesRead + 1;
+        const items = (result.items || []).filter(it => it.type === Dynamsoft.Core.EnumCapturedResultItemType.CRIT_BARCODE);
+        overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+        if (items.length > 0) {
+            successNum = successNum + 1;
+            for (const item of items){
+                const location = item.location;
+                if (location && location.points){
+                    overlayCtx.strokeStyle = '#00ff00';
+                    overlayCtx.lineWidth = 3;
+                    const points = location.points;
+                    overlayCtx.beginPath();
+                    overlayCtx.moveTo(points[0].x, points[0].y);
+                    for (let i=1;i<points.length;i++) overlayCtx.lineTo(points[i].x, points[i].y);
+                    overlayCtx.closePath();
+                    overlayCtx.stroke();
+                }
+                processRead(item);
+            }
+            // give the user immediate visual feedback of the currently received frame
+            var received = document.getElementById("received");
+            received.style.display = "block";
+            received.textContent = "frame " + getObjectLength(code_results) + "/" + total;
+        }
+        var endTime = performance.now();
+        updateStatistics(endTime-startTime);
+    }
+
+    function resetResults(){
+        code_results={};
+        total = 0;
+    }
+
     function updateStatistics(timeElapsed){
         var statisticsPre = document.getElementById("statisticsPre");
         statistics = "elapsed time: " + (timeElapsed)/1000 +"s";
@@ -327,9 +192,9 @@
         statistics = statistics +"\nprogress: " + getObjectLength(code_results) + "/" + total;
         statisticsPre.innerHTML=statistics;
     }
-    
-    function processRead(result){
-        var text = result["barcodeText"];
+
+    function processRead(item){
+        var text = item.text;
         try {
             var meta = text.split("|")[0];
             var totalOfThisOne = parseInt(meta.split("/")[1]);
@@ -340,54 +205,56 @@
                     return;
                 }
             }
-            
+
             total = totalOfThisOne;
             var index = parseInt(meta.split("/")[0]);
-            code_results[index]=result;
+            code_results[index]=item;
             if (getObjectLength(code_results)==total){
                 console.log("completed");
                 console.log(code_results);
                 onCompleted();
             }
-        
+
         } catch(error) {
             console.log(error);
         }
     }
-    
+
     function onCompleted(){
-        var continuous = document.getElementById("continuousChk").checked;
-        var endTime = new Date().getTime();
+        // Stop scanning and close the camera once the last frame has been received.
+        var endTime = performance.now();
         timeElapsed = endTime - startTime;
-        if (continuous==false){
-            stop();
-            var decodedResultsContainer = document.getElementById("decodedResults");
-            decodedResultsContainer.style.display = "";
-        }else{
-            startTime = new Date().getTime();
-            framesRead = 0;
-            successNum = 0;
-        }
+        stop();
+        var notice = document.getElementById("transferNotice");
+        notice.style.display = "block";
+        notice.textContent = "Transfer complete: " + getObjectLength(code_results) + " frames in " + (timeElapsed/1000).toFixed(2) + "s";
+        var decodedResultsContainer = document.getElementById("decodedResults");
+        decodedResultsContainer.style.display = "";
         updateStatistics(timeElapsed);
         showResult(timeElapsed);
     }
-    
+
     function getObjectLength(obj){
         return getObjectKeys(obj).length;
     }
-    
+
     function getObjectKeys(obj){
         return Object.keys(obj);
     }
-    
+
     async function showResult(timeElapsed){
+        if (getObjectLength(code_results) < total){
+            alert("Incomplete transfer: received " + getObjectLength(code_results) + " of " + total + " frames. Please scan again.");
+            resetResults();
+            return;
+        }
         var jointData = [];
         for (var i=0;i<getObjectLength(code_results);i++){
             var index = i+1;
             var result = code_results[index];
             console.log(result);
-            var bytes = result.barcodeBytes;
-            var text = result.barcodeText;
+            var bytes = result.bytes;
+            var text = result.text;
             if (index == 1){
                 var filename = text.split("|")[1]; //the first one contains filename|image/webp|data
                 var mimeType = text.split("|")[2];
@@ -421,7 +288,6 @@
     }
     //https://stackoverflow.com/questions/12710001/how-to-convert-uint8-array-to-base64-encoded-string
     const ArraybufferAsDataURL = async (data,mimeType) => {
-        // Use a FileReader to generate a base64 data URI
         const dataUrl = await new Promise((r) => {
             const reader = new FileReader()
             reader.onload = () => r(reader.result)
@@ -429,15 +295,9 @@
             var blob = new Blob([array],{type: mimeType});
             reader.readAsDataURL(blob)
         })
-
-        /*
-        The result looks like 
-        "data:application/octet-stream;base64,<your base64 data>", 
-        so we split off the beginning:
-        */
         return dataUrl;
     }
-    
+
     function ConvertToUInt8Array(data){
         var array = new Uint8Array(data.length);
         for (var i=0;i<data.length;i++){
@@ -445,7 +305,7 @@
         }
         return array;
     }
-    
+
     function appendDownloadLink(item, dataURL,filename){
         var link = document.createElement('a');
         link.setAttribute('target', '_blank');
@@ -458,70 +318,49 @@
         link.innerText=filename;
         item.appendChild(link);
     }
-    
+
     async function updateSettings(instance,isReader){
-        await instance.resetRuntimeSettings();
-        let settings = await instance.getRuntimeSettings();
-        settings.deblurLevel = 0;
-        settings.barcodeFormatIds = Dynamsoft.DBR.EnumBarcodeFormat.BF_QR_CODE;
-        if (isReader==false){
-            if (document.getElementById("scanRegionChk").checked){
-                settings.region.regionMeasuredByPercentage = 1;
-                var video = document.getElementsByTagName("video")[0];
-                if (video.videoHeight>video.videoWidth){
-                    settings.region.regionLeft = 0;
-                    settings.region.regionTop = 25;
-                    settings.region.regionRight = 100;
-                    settings.region.regionBottom = 75;
-                }else{
-                    settings.region.regionLeft = 25;
-                    settings.region.regionTop = 0;
-                    settings.region.regionRight = 75;
-                    settings.region.regionBottom = 100;
-                }
+        // Keep the default template; only restrict to QR codes.
+        let settings = await instance.getSimplifiedSettings('ReadBarcodes_Default');
+        settings.barcodeSettings.barcodeFormatIds = Dynamsoft.DBR.EnumBarcodeFormat.BF_QR_CODE;
+        if (document.getElementById("scanRegionChk").checked){
+            settings.roiMeasuredInPercentage = true;
+            const videoW = videoEl.videoWidth;
+            const videoH = videoEl.videoHeight;
+            if (videoH > videoW){
+                settings.roi = {points: [{x:0,y:25},{x:100,y:25},{x:100,y:75},{x:0,y:75}], id: 0};
+            }else{
+                settings.roi = {points: [{x:25,y:0},{x:75,y:0},{x:75,y:100},{x:25,y:100}], id: 0};
             }
         }
-        
-        if (document.getElementById("scandirectChk").checked){
-            settings.localizationModes = [Dynamsoft.DBR.EnumLocalizationMode.LM_SCAN_DIRECTLY, 0, 0, 0, 0, 0, 0, 0, 0];
-        }
-        if (document.getElementById("largeBlockSizeChk").checked){
-            await instance.setModeArgument("BinarizationModes",0,"EnableFillBinaryVacancy","0");
-            await instance.setModeArgument("BinarizationModes",0,"BlockSizeX","61");
-            await instance.setModeArgument("BinarizationModes",0,"BlockSizeY","61");
-        }
-        
-        await instance.updateRuntimeSettings(settings);
-        if (document.getElementById("templateChk").checked){
-            var template = document.getElementsByTagName("textarea")[0].value;
-            if (template!=""){
-                await instance.initRuntimeSettingsWithString(template);
-                console.log("template inited");
-            }
-        }
-        
+        await instance.updateSettings('ReadBarcodes_Default', settings);
     }
-    
+
     async function decodefile(){
         let files = document.getElementById('file').files;
         if (files.length == 0) {
             return;
         }
-        let reader = await Dynamsoft.DBR.BarcodeReader.createInstance();
-        await updateSettings(reader,true);
+        await updateSettings(cvr,true);
         var file = files[0];
-        var timeOfBegin = new Date().getTime();
+        const dataUrl = await new Promise((r) => {
+            var reader = new FileReader();
+            reader.onload = () => r(reader.result);
+            reader.readAsDataURL(file);
+        });
+        var timeOfBegin = performance.now();
         console.log("decoding");
-        let results = await reader.decode(file);
-        if (results.length>0){
-            console.log(results);
-            var timeOfEnd = new Date().getTime();
+        let result = await cvr.capture(dataUrl, 'ReadBarcodes_Default');
+        var timeOfEnd = performance.now();
+        var items = (result.items || []).filter(it => it.type === Dynamsoft.Core.EnumCapturedResultItemType.CRIT_BARCODE);
+        if (items.length>0){
+            console.log(items);
             alert("Detected. Elapsed time: "+(timeOfEnd-timeOfBegin));
         }else{
             alert("No barcodes detected.")
         }
     }
-    
+
   </script>
 </body>
 
