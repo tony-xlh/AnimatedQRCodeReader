@@ -111,12 +111,17 @@
             videoEl.srcObject = stream;
             await videoEl.play();
         } catch (e) {
-            alert("Camera access failed: "+e.message);
+            alert("Camera access failed: " + e.message +
+                "\n\nNote: the camera API requires HTTPS or localhost. If you opened this file directly (file://), serve it with a local web server instead, e.g. 'python -m http.server' in this folder, or use the online demo.");
             stop();
             return;
         }
-        await updateSettings(cvr,false);
         scanning = true;
+        try {
+            await updateSettings(cvr,false);
+        } catch (e) {
+            console.error("updateSettings failed:", e);
+        }
         scanLoop();
     }
 
@@ -161,28 +166,41 @@
         overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
         if (items.length > 0) {
             successNum = successNum + 1;
+            var decoded = [];
             for (const item of items){
-                const location = item.location;
-                if (location && location.points){
-                    overlayCtx.strokeStyle = '#00ff00';
-                    overlayCtx.lineWidth = 3;
-                    const points = location.points;
-                    overlayCtx.beginPath();
-                    overlayCtx.moveTo(points[0].x, points[0].y);
-                    for (let i=1;i<points.length;i++) overlayCtx.lineTo(points[i].x, points[i].y);
-                    overlayCtx.closePath();
-                    overlayCtx.stroke();
+                // Guard the overlay drawing: some results may carry an incomplete
+                // location, and a throw here would break the whole scan loop.
+                try {
+                    const location = item.location;
+                    if (location && location.points && location.points.length >= 4){
+                        overlayCtx.strokeStyle = '#00ff00';
+                        overlayCtx.lineWidth = 3;
+                        const points = location.points;
+                        overlayCtx.beginPath();
+                        overlayCtx.moveTo(points[0].x, points[0].y);
+                        for (let i=1;i<points.length;i++) overlayCtx.lineTo(points[i].x, points[i].y);
+                        overlayCtx.closePath();
+                        overlayCtx.stroke();
+                    }
+                } catch (e) {
+                    console.error(e);
                 }
-                processRead(item);
+                try {
+                    processRead(item);
+                } catch(e) {
+                    console.error(e);
+                }
+                decoded.push(item.text);
             }
-            // give the user immediate visual feedback of the currently received frame
+            // give the user immediate visual feedback: frame progress for animated
+            // transfers, or the decoded text when scanning a plain QR code.
             var received = document.getElementById("received");
             received.style.display = "block";
             var receivedCount = getObjectLength(code_results);
-            if (total > 0 && receivedCount < total){
+            if (total > 0){
                 received.textContent = "frame " + receivedCount + "/" + total;
-            }else if (total > 0){
-                received.textContent = "All frames received";
+            }else{
+                received.textContent = decoded[0].substring(0, 160);
             }
         }
         var endTime = performance.now();
@@ -208,6 +226,11 @@
         var text = item.text;
         try {
             var meta = text.split("|")[0];
+            // Only animated QR frames carry the "index/total" metadata; plain QR
+            // codes are shown as text and must not pollute the transfer state.
+            if (!/^\d+\/\d+$/.test(meta)) {
+                return;
+            }
             var totalOfThisOne = parseInt(meta.split("/")[1]);
             if (total!=0){
                 if (total != totalOfThisOne){
@@ -259,28 +282,35 @@
             resetResults();
             return;
         }
-        var jointData = [];
+        var jointData = new Uint8Array(0);
         for (var i=0;i<getObjectLength(code_results);i++){
             var index = i+1;
             var result = code_results[index];
             console.log(result);
             var bytes = result.bytes;
+            var text = result.text;
             if (index == 1){
-                // byte-level parsing: locate the three '|' separators of the ASCII
-                // prefix ("1/N|filename|mime|"); everything after the third separator
-                // is the payload (flag byte + data).
+                // The per-transfer flag char ('R'/'Z') sits right after "1/N|", so the
+                // decoded text is "1/N|Rfilename|mime|data...". Skip it when parsing the
+                // filename. Separator positions for slicing come from the bytes.
+                var parts = text.split("|");
+                var filename = decodeURIComponent(parts[1].substring(1));
+                var mimeType = parts[2];
                 var sep1 = bytes.indexOf(0x7C); // after "1/N"
                 var sep2 = bytes.indexOf(0x7C, sep1+1); // after filename
                 var sep3 = bytes.indexOf(0x7C, sep2+1); // after mime
-                var filename = decodeURIComponent(new TextDecoder('ascii').decode(bytes.slice(sep1+1, sep2)));
-                var mimeType = new TextDecoder('ascii').decode(bytes.slice(sep2+1, sep3));
                 var dataStart = sep3 + 1;
                 data = bytes.slice(dataStart,bytes.length);
             }else{
                 var dataStart = bytes.indexOf(0x7C)+1;
                 data = bytes.slice(dataStart,bytes.length);
             }
-            jointData = jointData.concat(data);
+            // Accumulate with a typed array; Array.concat would treat each Uint8Array
+            // chunk as a single element and corrupt the payload.
+            var combined = new Uint8Array(jointData.length + data.length);
+            combined.set(jointData, 0);
+            combined.set(data, jointData.length);
+            jointData = combined;
         }
         // The per-transfer flag ('R' raw / 'Z' gzip) sits right after "1/N|" in the
         // first frame's decoded text; the joined payload below contains only the file
