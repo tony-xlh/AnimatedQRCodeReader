@@ -17,6 +17,8 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -27,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 public class ResultActivity extends AppCompatActivity {
     WebView webView;
@@ -57,6 +60,12 @@ public class ResultActivity extends AppCompatActivity {
         Log.d("DBR", "launched");
         Log.d("DBR", String.valueOf(results.size()));
         showResults();
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d("DBR", "ResultActivity destroyed");
+        super.onDestroy();
     }
 
     private int getTotalFrames() {
@@ -97,9 +106,15 @@ public class ResultActivity extends AppCompatActivity {
             }
             String dataURL = (String) data.get("dataURL");
             String speed = (String) data.get("speed");
-            textView.setText(speed + " " + dataURL);
+            String mime = (String) data.get("mime");
+            String filename = (String) data.get("filename");
+            byte[] bytes = (byte[]) data.get("bytes");
+            int sizeKB = bytes.length / 1024;
+            // Keep the status line short; putting a huge data URL into a TextView
+            // blocks the main thread on layout measurement.
+            textView.setText(speed + " (" + sizeKB + " KB, " + mime + ")");
             webView.getSettings().setDefaultTextEncodingName("UTF-8");
-            webView.loadData(buildHTML(dataURL), "text/html; charset=UTF-8", null);
+            webView.loadData(buildHTML(dataURL, mime, filename, sizeKB, speed), "text/html; charset=UTF-8", null);
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this, "Failed to show result: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -156,10 +171,35 @@ public class ResultActivity extends AppCompatActivity {
             Toast.makeText(this, "Transfer produced no data.", Toast.LENGTH_LONG).show();
             return null;
         }
-        HashMap<String, Object> data = new HashMap<String, Object>();
         byte[] bytes = BytesListAsArray(bytesList);
-        String base64 = Base64.encodeToString(bytes, Base64.DEFAULT);
-        String dataURL = "data:" + mime + ";base64," + base64;
+        // The per-transfer flag sits right after "1/N|" in the first frame: 'Z' = gzip.
+        String firstText = (String) results.get(1).get("text");
+        String flag = firstText.substring(firstText.indexOf("|") + 1, firstText.indexOf("|") + 2);
+        if ("Z".equals(flag)) {
+            try {
+                GZIPInputStream gz = new GZIPInputStream(new ByteArrayInputStream(bytes));
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                byte[] buf = new byte[8192];
+                int len;
+                while ((len = gz.read(buf)) != -1) {
+                    out.write(buf, 0, len);
+                }
+                gz.close();
+                bytes = out.toByteArray();
+            } catch (IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Failed to decompress transfer: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                return null;
+            }
+        }
+        HashMap<String, Object> data = new HashMap<String, Object>();
+        // Only build a data URL for images; large binaries would create huge strings
+        // that both freeze the text view and bloat the WebView document.
+        String dataURL = null;
+        if (mime.startsWith("image/")) {
+            String base64 = Base64.encodeToString(bytes, Base64.DEFAULT);
+            dataURL = "data:" + mime + ";base64," + base64;
+        }
         double speed = timeElapsed == null || timeElapsed == 0 ? 0 : 1000.0 * bytes.length / 1024 / timeElapsed;
         String formattedSpeed = String.format("%.2f", speed);
         data.put("bytes", bytes);
@@ -185,19 +225,28 @@ public class ResultActivity extends AppCompatActivity {
         return bytes;
     }
 
-    private String buildHTML(String dataURL) {
-        String head = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head><body style=\"width:100%;\">";
-        String body = "";
-        if (dataURL.contains("image")) {
-            body = "<img style=\"max-width:100%;\" src=\"" + dataURL + "\" >";
-        } else if (dataURL.startsWith("data:application/pdf")) {
-            body = "<embed style=\"width:100%;height:100%\" type=\"application/pdf\" src=\"" + dataURL + "\" >";
+    private String buildHTML(String dataURL, String mime, String filename, int sizeKB, String speed) {
+        String head = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\">";
+        head += "<style>body{font-family:system-ui;margin:16px;text-align:center;}";
+        head += "h2{color:#16a34a;font-size:22px;margin:8px 0;}";
+        head += "p{color:#555;font-size:15px;margin:4px 0;}";
+        head += ".hint{margin-top:24px;font-size:17px;color:#1e3a8a;}</style>";
+        head += "</head><body>";
+        String body = "<h2>&#10003; Transfer Complete</h2>";
+        body += "<p><b>" + escapeHtml(filename) + "</b></p>";
+        body += "<p>" + sizeKB + " KB &middot; " + escapeHtml(speed) + "</p>";
+        if (dataURL != null && mime.startsWith("image/")) {
+            body += "<img style=\"max-width:90%;margin-top:16px;\" src=\"" + dataURL + "\" />";
         } else {
-            body = "Binary file.";
+            body += "<p class=\"hint\">Tap Save to export the file.</p>";
         }
         String tail = "</body></html>";
-        String html = head + body + tail;
-        return html;
+        return head + body + tail;
+    }
+
+    private String escapeHtml(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
 

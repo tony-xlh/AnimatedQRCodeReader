@@ -130,7 +130,9 @@ public class HomeActivity extends AppCompatActivity {
             animVideo.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    startSimulation();
+                    if (!simulating) {
+                        startSimulation();
+                    }
                 }
             }, 3000);
         }
@@ -308,6 +310,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void onReadingCompleted() {
+        Log.d("DBR", "HomeActivity onReadingCompleted total=" + total + " results=" + results.size());
         Intent intent = new Intent(this, ResultActivity.class);
         intent.putExtra("timeElapsed", System.currentTimeMillis() - simStartTime);
         HashMap<Integer, Object> clone = (HashMap<Integer, Object>) results.clone();

@@ -13,10 +13,17 @@
 </br>
 <label for="name">Chunk size (bytes):</label>
 
-<input type="text" id="chunkSize" name="chunkSize" value="2000">
+<input type="text" id="chunkSize" name="chunkSize" value="2900">
 <label for="name">Extra interval (ms):</label>
 
 <input type="text" id="interval" name="interval" value="200">
+</br>
+<label for="name">QR codes per screen:</label>
+<select id="grid" onchange="onGridChange()">
+    <option value="1">1 (single)</option>
+    <option value="2" selected>2x2 (4)</option>
+    <option value="3">3x3 (9)</option>
+</select>
 </br>
 <input type="button" value="Stop" onclick="stop();" />
 <input type="button" value="Start" onclick="start();" />
@@ -25,31 +32,80 @@
 
 <script>
 var chunks = [];
+var totalScreens = 0;
 var currentIndex = 0;
 var stopLoop = false;
-var maxWidth = 0;
-var maxHeight = 0;
 qrcode.stringToBytes = function(data) { return data; };
 
-function createQRCode(data){
-    var typeNumber = 0;
-    var errorCorrectionLevel = 'L';
-    var qr = qrcode(typeNumber, errorCorrectionLevel);
-    qr.addData(data);
-    qr.make();
-    var placeHolder = document.getElementById('placeHolder');
-    placeHolder.innerHTML = qr.createSvgTag(); // or createImgTag
-    var img = placeHolder.children[0];
-    var width = img.getAttribute("width").replace("px","");
-    var height = img.getAttribute("height").replace("px","");
-    maxWidth = Math.max(maxWidth,width);
-    maxHeight = Math.max(maxHeight,height);
-    if (width<maxWidth){
-        img.setAttribute("width",maxWidth);
+// 1st byte of the payload flags the encoding: ASCII 'R' = raw, ASCII 'Z' = deflate (gzip).
+// ASCII flags are used so the decoded text and bytes stay index-aligned.
+const FLAG_RAW = 0x52;  // 'R'
+const FLAG_GZIP = 0x5A; // 'Z'
+
+async function gzipBytes(buffer) {
+    const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream('gzip'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+function getGridSize() {
+    return parseInt(document.getElementById("grid").value);
+}
+
+function onGridChange() {
+    if (chunks.length > 0) {
+        rebuildScreens();
+        currentIndex = 0;
+        showAnimatedQRCode();
     }
-    if (height<maxHeight){
-        img.setAttribute("height",maxHeight);
-    }    
+}
+
+// Renders a batch of chunks as one screen: a grid of QR codes. Each QR carries the
+// unchanged "i/N|data" payload, so the reader treats every QR as an independent frame.
+function renderScreen(chunkList) {
+    var gridSize = getGridSize();
+    var qrs = [];
+    var maxModuleCount = 0;
+    for (var i = 0; i < chunkList.length; i++) {
+        var qr = qrcode(0, 'L'); // typeNumber 0, error correction L
+        qr.addData(chunkList[i]);
+        qr.make();
+        qrs.push(qr);
+        maxModuleCount = Math.max(maxModuleCount, qr.getModuleCount());
+    }
+    var cell = 8;
+    var margin = 4; // quiet zone modules
+    var qrSize = (maxModuleCount + margin * 2) * cell;
+    var canvas = document.createElement('canvas');
+    canvas.width = qrSize * gridSize;
+    canvas.height = qrSize * gridSize;
+    // Scale the canvas proportionally so the whole screen is visible: the intrinsic
+    // size can be huge (2960px+), width/height auto keeps the aspect ratio.
+    canvas.style.display = "block";
+    canvas.style.margin = "0 auto";
+    canvas.style.maxWidth = "100%";
+    canvas.style.maxHeight = "85vh";
+    canvas.style.width = "auto";
+    canvas.style.height = "auto";
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#000000';
+    for (var idx = 0; idx < qrs.length; idx++) {
+        var col = idx % gridSize;
+        var row = Math.floor(idx / gridSize);
+        var px = col * qrSize;
+        var py = row * qrSize;
+        var count = qrs[idx].getModuleCount();
+        var off = (qrSize - count * cell) / 2;
+        for (var r = 0; r < count; r++) {
+            for (var c = 0; c < count; c++) {
+                if (qrs[idx].isDark(r, c)) {
+                    ctx.fillRect(px + off + c * cell, py + off + r * cell, cell, cell);
+                }
+            }
+        }
+    }
+    return canvas;
 }
 
 function stop(){
@@ -67,12 +123,10 @@ function loadfile() {
     }
     var file = files[0];
     fileReader = new FileReader();
-    fileReader.onload = function(e){
+    fileReader.onload = async function(e){
         stop();
         currentIndex=0;
-        maxWidth=0;
-        maxHeight=0;
-        loadArrayBufferToChunks(e.target.result,file.name, file.type);
+        await loadArrayBufferToChunks(e.target.result,file.name, file.type);
         stopLoop=false;
         showAnimatedQRCode();
     };
@@ -82,11 +136,24 @@ function loadfile() {
     fileReader.readAsArrayBuffer(file);
 }
 
-function loadArrayBufferToChunks(bytes,filename,type){
-    var bytes = new Uint8Array(bytes);
-    var data = concatTypedArrays(stringToBytes(encodeURIComponent(filename)+"|"+type+"|"),bytes)
+async function loadArrayBufferToChunks(bytes,filename,type){
+    bytes = new Uint8Array(bytes);
+    try {
+        // compress the whole payload (header + file) for faster transfer; PNG/JPEG
+        // data is already compressed, in which case the raw flag is kept.
+        var compressed = new Uint8Array(await gzipBytes(bytes));
+        var raw = new Uint8Array(bytes);
+        var flag = compressed.length < raw.length ? FLAG_GZIP : FLAG_RAW;
+        var body = flag === FLAG_GZIP ? compressed : raw;
+    } catch (ex) {
+        console.warn('CompressionStream unavailable, fall back to raw.');
+        body = new Uint8Array(bytes);
+        flag = FLAG_RAW;
+    }
+    var header = stringToBytes(encodeURIComponent(filename)+"|"+type+"|");
+    var data = concatTypedArrays(new Uint8Array([flag]), concatTypedArrays(header, body));
     var chunkSize = parseInt(document.getElementById("chunkSize").value);
-    console.log("chunk size:"+chunkSize);
+    console.log("chunk size:"+chunkSize+" flag:"+flag);
     var num = Math.ceil(data.length / chunkSize)
     chunks=[];
     for (var i=0;i<num;i++){
@@ -96,14 +163,32 @@ function loadArrayBufferToChunks(bytes,filename,type){
         chunk = concatTypedArrays(stringToBytes(meta),chunk);
         chunks.push(chunk);
     }
+    rebuildScreens();
     console.log(chunks);
 }
 
+// Groups the chunks into screens of gridSize*gridSize QR codes.
+function rebuildScreens() {
+    var gridSize = getGridSize();
+    var perScreen = gridSize * gridSize;
+    totalScreens = Math.ceil(chunks.length / perScreen);
+}
+
 function showAnimatedQRCode(){
-    createQRCode(chunks[currentIndex]);
+    if (chunks.length == 0 || totalScreens == 0) {
+        return;
+    }
+    var gridSize = getGridSize();
+    var perScreen = gridSize * gridSize;
+    var start = currentIndex * perScreen;
+    var batch = chunks.slice(start, start + perScreen);
+    var canvas = renderScreen(batch);
+    var placeHolder = document.getElementById('placeHolder');
+    placeHolder.innerHTML = "";
+    placeHolder.appendChild(canvas);
     currentIndex = currentIndex + 1
-    document.getElementById("progress").innerHTML = currentIndex + "/" + chunks.length;
-    if (currentIndex == chunks.length){
+    document.getElementById("progress").innerHTML = currentIndex + "/" + totalScreens;
+    if (currentIndex >= totalScreens){
         currentIndex = 0;
         if (document.getElementById("loopChk").checked==false){
             return;

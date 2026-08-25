@@ -101,7 +101,13 @@
         framesRead = 0;
         successNum = 0;
         try {
-            stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment'}});
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                }
+            });
             videoEl.srcObject = stream;
             await videoEl.play();
         } catch (e) {
@@ -172,7 +178,12 @@
             // give the user immediate visual feedback of the currently received frame
             var received = document.getElementById("received");
             received.style.display = "block";
-            received.textContent = "frame " + getObjectLength(code_results) + "/" + total;
+            var receivedCount = getObjectLength(code_results);
+            if (total > 0 && receivedCount < total){
+                received.textContent = "frame " + receivedCount + "/" + total;
+            }else if (total > 0){
+                received.textContent = "All frames received";
+            }
         }
         var endTime = performance.now();
         updateStatistics(endTime-startTime);
@@ -254,20 +265,39 @@
             var result = code_results[index];
             console.log(result);
             var bytes = result.bytes;
-            var text = result.text;
             if (index == 1){
-                var filename = text.split("|")[1]; //the first one contains filename|image/webp|data
-                var mimeType = text.split("|")[2];
-                var firstSeparatorIndex = text.indexOf("|");
-                var secondSeparatorIndex = text.indexOf("|",firstSeparatorIndex+1);
-                var dataStart = text.indexOf("|",secondSeparatorIndex+1)+1;
+                // byte-level parsing: locate the three '|' separators of the ASCII
+                // prefix ("1/N|filename|mime|"); everything after the third separator
+                // is the payload (flag byte + data).
+                var sep1 = bytes.indexOf(0x7C); // after "1/N"
+                var sep2 = bytes.indexOf(0x7C, sep1+1); // after filename
+                var sep3 = bytes.indexOf(0x7C, sep2+1); // after mime
+                var filename = decodeURIComponent(new TextDecoder('ascii').decode(bytes.slice(sep1+1, sep2)));
+                var mimeType = new TextDecoder('ascii').decode(bytes.slice(sep2+1, sep3));
+                var dataStart = sep3 + 1;
                 data = bytes.slice(dataStart,bytes.length);
             }else{
-                var dataStart = text.indexOf("|")+1;
+                var dataStart = bytes.indexOf(0x7C)+1;
                 data = bytes.slice(dataStart,bytes.length);
             }
             jointData = jointData.concat(data);
         }
+        // The per-transfer flag ('R' raw / 'Z' gzip) sits right after "1/N|" in the
+        // first frame's decoded text; the joined payload below contains only the file
+        // bytes (raw or gzip), so decompress it when the flag says so.
+        var flag = code_results[1].text.charAt(code_results[1].text.indexOf("|")+1);
+        var rawBytes = new Uint8Array(jointData);
+        if (flag === 'Z') {
+            try {
+                const stream = new Blob([rawBytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+                rawBytes = new Uint8Array(await new Response(stream).arrayBuffer());
+            } catch (e) {
+                alert("Failed to decompress transfer: " + e.message);
+                resetResults();
+                return;
+            }
+        }
+        jointData = rawBytes;
         var decodedList = document.getElementById("decodedList");
         var item = document.createElement("li");
         decodedList.appendChild(item);
