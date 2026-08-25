@@ -24,16 +24,16 @@
 </style>
 </head>
 <body>
-    <div id="scanner" style="display:none;">
-        <div class="dce-video-container" style="position:absolute;left:0;top:0;width:100%;height:100%;">
-            <video id="video" autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video>
-            <canvas id="overlay" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;"></canvas>
+    <div id="scanner" style="display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:#000;">
+        <div class="dce-video-container" style="position:absolute;left:0;top:0;width:100%;height:100%;background:#000;">
+            <video id="video" autoplay playsinline style="position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;"></video>
+            <canvas id="overlay" style="position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;pointer-events:none;z-index:2;"></canvas>
         </div>
         <div id="received" style="display:none;position:absolute;left:50%;top:56px;transform:translateX(-50%);color:#00e5ff;text-shadow:1px 1px black;font-size:20px;font-weight:bold;z-index:9;"></div>
-        <div style="position: absolute;left: 0;top: 0;">
+        <div style="position: absolute;left: 0;top: 0;z-index:3;">
             <select class="dce-sel-camera" style="display: block;"></select>
         </div>
-        <input type="button" value="Stop" onclick="stop();"  style="position:absolute;right:0;top:0;"/>
+        <input type="button" value="Stop" onclick="stop();"  style="position:absolute;right:0;top:0;z-index:3;"/>
     </div>
     <div id="transferNotice" style="display:none;position:fixed;top:0;left:0;right:0;padding:14px;background:#16a34a;color:#ffffff;font-size:16px;z-index:10;text-align:center;font-weight:bold;"></div>
     <div id="home">
@@ -65,7 +65,8 @@
     let cvr = null;
     let stream = null;
     let scanning = false;
-    let videoEl, overlayCanvas, overlayCtx;
+    let lastDetected = 0;
+    let videoEl, overlayCanvas, overlayCtx, captureCanvas, captureCtx;
 
     init();
 
@@ -76,6 +77,8 @@
         videoEl = document.getElementById('video');
         overlayCanvas = document.getElementById('overlay');
         overlayCtx = overlayCanvas.getContext('2d');
+        captureCanvas = document.createElement('canvas');
+        captureCtx = captureCanvas.getContext('2d');
         console.log("init done");
     }
 
@@ -100,6 +103,9 @@
         decodedList.innerHTML="";
         framesRead = 0;
         successNum = 0;
+        lastDetected = 0;
+        startTime = performance.now();
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
         try {
             stream = await navigator.mediaDevices.getUserMedia({
                 video: {
@@ -127,17 +133,16 @@
 
     const scanLoop = async () => {
         if (!scanning) return;
-        startTime = startTime || performance.now();
-        if (videoEl.readyState >= 2) {
-            const canvas = document.createElement('canvas');
-            canvas.width = videoEl.videoWidth;
-            canvas.height = videoEl.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
-            overlayCanvas.width = canvas.width;
-            overlayCanvas.height = canvas.height;
+        if (videoEl.readyState >= 2 && videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
+            if (captureCanvas.width !== videoEl.videoWidth || captureCanvas.height !== videoEl.videoHeight) {
+                captureCanvas.width = videoEl.videoWidth;
+                captureCanvas.height = videoEl.videoHeight;
+                overlayCanvas.width = videoEl.videoWidth;
+                overlayCanvas.height = videoEl.videoHeight;
+            }
+            captureCtx.drawImage(videoEl, 0, 0, captureCanvas.width, captureCanvas.height);
             try {
-                const result = await cvr.capture(canvas, 'ReadBarcodes_Default');
+                const result = await cvr.capture(captureCanvas, 'ReadBarcodes_Default');
                 if (scanning) onFrameRead(result);
             } catch(e){
                 console.error(e);
@@ -163,6 +168,7 @@
     function onFrameRead(result){
         framesRead = framesRead + 1;
         const items = (result.items || []).filter(it => it.type === Dynamsoft.Core.EnumCapturedResultItemType.CRIT_BARCODE);
+        lastDetected = items.length;
         overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
         if (items.length > 0) {
             successNum = successNum + 1;
@@ -174,7 +180,7 @@
                     const location = item.location;
                     if (location && location.points && location.points.length >= 4){
                         overlayCtx.strokeStyle = '#00ff00';
-                        overlayCtx.lineWidth = 3;
+                        overlayCtx.lineWidth = 4;
                         const points = location.points;
                         overlayCtx.beginPath();
                         overlayCtx.moveTo(points[0].x, points[0].y);
@@ -217,6 +223,7 @@
         statistics = "elapsed time: " + (timeElapsed)/1000 +"s";
         statistics = statistics +"\ntotal frame number: " + framesRead;
         statistics = statistics +"\nsuccessful number: " + successNum;
+        statistics = statistics +"\nlast frame detected: " + lastDetected;
         statistics = statistics +"\nsuccess fps: " + (successNum/(timeElapsed/1000)).toFixed(2);
         statistics = statistics +"\nprogress: " + getObjectLength(code_results) + "/" + total;
         statisticsPre.innerHTML=statistics;
